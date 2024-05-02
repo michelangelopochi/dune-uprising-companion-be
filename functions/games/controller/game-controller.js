@@ -330,7 +330,7 @@ const endGame = async (req, res, next) => {
 
         console.log("Partita in corso rimossa dal tavolo: " + tableKey);
 
-        res.status(200).json({ message: "Partita terminata" });
+        res.status(200).json({ message: "Game ended" });
     } catch (error) {
         next(error);
     }
@@ -338,7 +338,7 @@ const endGame = async (req, res, next) => {
 
 const createTableID = (length) => {
     var result = '';
-    const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789';
+    const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
     const charactersLength = characters.length;
     var counter = 0;
     while (counter < length) {

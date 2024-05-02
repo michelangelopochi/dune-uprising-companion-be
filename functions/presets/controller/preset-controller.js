@@ -32,8 +32,6 @@ const save = async (req, res, next) => {
             res.status(400).json({ message: 'Error during preset save' });
         }
 
-        console.log(preset._id);
-
         await User.findOneAndUpdate({ _id: _id }, { $push: { presets: preset._id } });
 
         const updatedUser = await User.findById(_id, '-password')
