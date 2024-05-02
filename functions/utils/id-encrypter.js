@@ -3,7 +3,7 @@ require('dotenv').config();
 const { ObjectId } = require('mongodb');
 
 const algorithm = 'aes-256-cbc';
-const key = crypto.randomBytes(32);
+const key = crypto.scryptSync(process.env.SECRET_ID_CRYPT_KEY, 'GfG', 32)
 const iv = Buffer.alloc(16, 0);
 
 const encryptData = (data) => {
