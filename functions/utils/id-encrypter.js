@@ -1,19 +1,21 @@
-'use strict';
-
 const crypto = require('crypto');
 require('dotenv').config();
 const { ObjectId } = require('mongodb');
 
+const algorithm = 'aes-256-cbc';
+const key = crypto.randomBytes(32);
+const iv = Buffer.alloc(16, 0);
+
 const encryptData = (data) => {
-    const cipher = crypto.createCipher('aes-256-cbc', process.env.SECRET_ID_CRYPT_KEY);
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
     var encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return encrypted;
 }
 
 const decryptData = (encryptedData) => {
-    const decipher = crypto.createDecipher('aes-256-cbc', process.env.SECRET_ID_CRYPT_KEY);
-    var decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
 }
