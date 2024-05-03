@@ -98,11 +98,15 @@ const addUser = async (req, res, next) => {
             res.status(400).json({ message: 'No user found' });
         }
 
-        var updatedTable = await Table.findOneAndUpdate({ key: tableKey }, { $push: { users: userFound._id } });
+        await Table.findOneAndUpdate({ key: tableKey }, { $push: { users: userFound._id } });
+
+        var updatedTable = await Table.findOne({ owner: _id }, '-_id').sort({ name: 1 })
+            .populate({ path: 'owner', model: User, options: { collation: { 'locale': 'en' }, sort: { 'username': 1 } }, select: 'username avatar -_id' })
+            .populate({ path: 'users', model: User, options: { collation: { 'locale': 'en' }, sort: { 'username': 1 } }, select: 'username avatar -_id' });
 
         console.log(`L'utente ${_id} - ${username} ha aggiunto l'utente ${userFound._id} - ${userToAdd} al tavolo ${tableKey}`);
 
-        res.status(200).json({ message: "User " + userToAdd + " added" });
+        res.status(200).json({ message: "User " + userToAdd + " added", table: updatedTable });
     } catch (error) {
         next(error);
     }
@@ -110,13 +114,70 @@ const addUser = async (req, res, next) => {
 
 const removeUser = async (req, res, next) => {
     var user = req.user;
+    var body = req.body
 
-    //TODO
+    const { _id, username } = req.user;
+    const { tableKey, userToRemove } = body;
+
     try {
-        res.status(200).json({ message: "chiamata create ok" });
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        if (!tableKey || !userToRemove) {
+            res.status(400).json({ message: 'Invalid params' });
+        }
+
+        var userFound = await User.findOne({ username: userToRemove });
+
+        if (!userFound) {
+            console.log(`L'utente ${userToRemove} non è stato trovato`);
+            res.status(400).json({ message: 'No user found' });
+        }
+
+        await Table.findOneAndUpdate({ key: tableKey }, { $pull: { users: userFound._id } });
+
+        var updatedTable = await Table.findOne({ owner: _id }, '-_id').sort({ name: 1 })
+            .populate({ path: 'owner', model: User, options: { collation: { 'locale': 'en' }, sort: { 'username': 1 } }, select: 'username avatar -_id' })
+            .populate({ path: 'users', model: User, options: { collation: { 'locale': 'en' }, sort: { 'username': 1 } }, select: 'username avatar -_id' });
+
+        console.log(`L'utente ${_id} - ${username} ha rimosso l'utente ${userFound._id} - ${userToRemove} dal tavolo ${tableKey}`);
+
+        res.status(200).json({ message: "User " + userToRemove + " removed", table: updatedTable });
     } catch (error) {
         next(error);
     }
 }
 
-module.exports = { getUserTables, create, deleteTable, addUser, removeUser };
+const getAllSubscribleUsers = async (req, res, next) => {
+    var user = req.user;
+    var body = req.body
+
+    const { _id, username } = req.user;
+    const { tableKey } = body;
+
+    try {
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        var users = [];
+
+        if (!tableKey) {
+            users = await User.find({ _id: { $ne: _id } }, 'username avatar -_id');
+        } else {
+            var table = await Table.findOne({ key: tableKey });
+            if (table) {
+                users = await User.find({ $or: [{ _id: { $ne: table.owner } }, { _id: { $in: table.users } }] }, 'username avatar -_id');
+            }
+        }
+
+        console.log(`L'utente ${_id} - ${username} ha cercato gli utenti iscrivibili al tavolo ${tableKey ? tableKey : ''}`);
+
+        res.status(200).json({ users: users });
+    } catch (error) {
+        next(error);
+    }
+}
+
+module.exports = { getUserTables, create, deleteTable, addUser, removeUser, getAllSubscribleUsers };
