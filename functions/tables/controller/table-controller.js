@@ -1,10 +1,12 @@
-const Table = require('../../models/tables/table');
-const User = require('../../models/user');
-const { v4: uuidv4 } = require('uuid');
-const { ObjectId } = require('mongodb');
-require('dotenv').config();
+import dotenv from "dotenv";
+import { ObjectId } from "mongodb";
+import User from "../../models/user.js";
+import Table from "../../models/tables/table.js";
+import { v4 as uuidv4 } from 'uuid'
 
-const getUserTables = async (req, res, next) => {
+dotenv.config();
+
+export async function getUserTables(req, res, next) {
     var user = req.user;
 
     const { _id } = req.user;
@@ -28,7 +30,7 @@ const getUserTables = async (req, res, next) => {
     }
 }
 
-const create = async (req, res, next) => {
+export async function create(req, res, next) {
     var user = req.user;
     var body = req.body
 
@@ -64,7 +66,7 @@ const create = async (req, res, next) => {
     }
 }
 
-const deleteTable = async (req, res, next) => {
+export async function deleteTable(req, res, next) {
     var user = req.user;
 
     //TODO
@@ -75,7 +77,7 @@ const deleteTable = async (req, res, next) => {
     }
 }
 
-const addUser = async (req, res, next) => {
+export async function addUser(req, res, next) {
     var user = req.user;
     var body = req.body
 
@@ -112,7 +114,7 @@ const addUser = async (req, res, next) => {
     }
 }
 
-const removeUser = async (req, res, next) => {
+export async function removeUser(req, res, next) {
     var user = req.user;
     var body = req.body
 
@@ -149,7 +151,7 @@ const removeUser = async (req, res, next) => {
     }
 }
 
-const getAllSubscribleUsers = async (req, res, next) => {
+export async function getAllSubscribleUsers(req, res, next) {
     var user = req.user;
     var body = req.body
 
@@ -164,11 +166,11 @@ const getAllSubscribleUsers = async (req, res, next) => {
         var users = [];
 
         if (!tableKey) {
-            users = await User.find({ _id: { $ne: _id } }, 'username avatar -_id');
+            users = await User.find({ $and: [{ _id: { $ne: _id } }, { role: { $ne: 'test' } }] }, 'username avatar -_id');
         } else {
             var table = await Table.findOne({ key: tableKey });
             if (table) {
-                users = await User.find({ $or: [{ _id: { $ne: table.owner } }, { _id: { $in: table.users } }] }, 'username avatar -_id');
+                users = await User.find({ $and: [{ _id: { $ne: _id } }, { $or: [{ _id: { $ne: table.owner } }, { _id: { $in: table.users } }] }] }, 'username avatar -_id');
             }
         }
 
@@ -179,5 +181,3 @@ const getAllSubscribleUsers = async (req, res, next) => {
         next(error);
     }
 }
-
-module.exports = { getUserTables, create, deleteTable, addUser, removeUser, getAllSubscribleUsers };

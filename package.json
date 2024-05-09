@@ -6,7 +6,7 @@
   "author": "Michelangelo Pochì",
   "license": "MIT",
   "scripts": {
-    "start": "node app.mjs"
+    "start": "nodemon app.mjs"
   },
   "dependencies": {
     "axios": "^1.6.8",
@@ -20,11 +20,14 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.5.0",
     "mongoose": "^8.3.1",
+    "nodemon": "^3.1.0",
     "serverless-http": "^3.2.0",
+    "socket.io": "^4.7.5",
     "uuid": "^9.0.1",
     "validatorjs": "^3.22.1"
   },
   "engines": {
     "node": ">=14"
-  }
+  },
+  "type": "module"
 }

@@ -1,10 +1,10 @@
-const express = require('express');
-const { authenticate } = require('../middlewares/auth-middleware');
-const User = require('../models/user');
+import express from 'express';
+import { authenticate } from "../middlewares/auth-middleware.js";
+import User from "../models/user.js";
 
-const router = express.Router();
+const userRouter = express.Router();
 
-router.get('/profile', authenticate, (req, res) => {
+userRouter.get('/profile', authenticate, (req, res) => {
     var user = req.user;
 
     res.json({
@@ -14,7 +14,7 @@ router.get('/profile', authenticate, (req, res) => {
     });
 });
 
-router.get('/getAllUsers', authenticate, async (req, res) => {
+userRouter.get('/getAllUsers', authenticate, async (req, res) => {
     var user = req.user;
 
     const { _id } = req.user;
@@ -26,4 +26,4 @@ router.get('/getAllUsers', authenticate, async (req, res) => {
     });
 });
 
-module.exports = router;
+export default userRouter;

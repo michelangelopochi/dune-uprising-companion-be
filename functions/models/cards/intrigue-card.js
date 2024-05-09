@@ -1,5 +1,7 @@
-const mongoose = require('mongoose');
-require('dotenv').config();
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const cardsDB = mongoose.createConnection(process.env.MONGODB_URI.split("?")[0] + "cards");
 
@@ -18,4 +20,4 @@ const intrigueCardSchema = new mongoose.Schema(
 
 const IntrigueCard = cardsDB.model('IntrigueCard', intrigueCardSchema, 'intrigue');
 
-module.exports = IntrigueCard;
+export default IntrigueCard;

@@ -1,11 +1,13 @@
-const Table = require('../../models/tables/table');
-const User = require('../../models/user');
-const ImperiumRowCard = require('../../models/cards/imperium-row-card');
-const { initializeApp } = require("firebase/app");
-const { getAnalytics } = require("firebase/analytics");
-const { getDatabase, ref, get, set, onValue, update, goOffline, push, goOnline, remove, increment } = require("firebase/database");
-const { encryptId } = require("../../utils/id-encrypter");
-require('dotenv').config();
+import { initializeApp } from 'firebase/app';
+import { getAnalytics } from 'firebase/analytics';
+import { getDatabase, ref, get, set, onValue, update, goOffline, push, goOnline, remove, increment } from 'firebase/database';
+import { encryptId } from '../../utils/id-encrypter.js';
+import Table from '../../models/tables/table.js';
+import User from '../../models/user.js';
+import ImperiumRowCard from '../../models/cards/imperium-row-card.js';
+import dotenv from "dotenv";
+
+dotenv.config();
 
 var database = null;
 
@@ -20,7 +22,7 @@ var firebaseConfig = {
     measurementId: "G-4EKPJBS3EL"
 };
 
-const create = async (req, res, next) => {
+export async function create(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -70,7 +72,7 @@ const create = async (req, res, next) => {
     }
 }
 
-const getGameCards = async (req, res, next) => {
+export async function getGameCards(req, res, next) {
     var user = req.user;
 
     const { _id, username } = req.user;
@@ -88,7 +90,7 @@ const getGameCards = async (req, res, next) => {
     }
 }
 
-const addGuest = async (req, res, next) => {
+export async function addGuest(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -127,7 +129,7 @@ const addGuest = async (req, res, next) => {
     }
 }
 
-const joinGame = async (req, res, next) => {
+export async function joinGame(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -184,7 +186,7 @@ const joinGame = async (req, res, next) => {
     }
 }
 
-const addCard = async (req, res, next) => {
+export async function addCard(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -235,7 +237,7 @@ const addCard = async (req, res, next) => {
     }
 }
 
-const removeCard = async (req, res, next) => {
+export async function removeCard(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -297,7 +299,7 @@ const removeCard = async (req, res, next) => {
     }
 }
 
-const endGame = async (req, res, next) => {
+export async function endGame(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -336,7 +338,7 @@ const endGame = async (req, res, next) => {
     }
 }
 
-const createTableID = (length) => {
+function createTableID(length) {
     var result = '';
     const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
     const charactersLength = characters.length;
@@ -347,5 +349,3 @@ const createTableID = (length) => {
     }
     return result;
 }
-
-module.exports = { getGameCards, create, addGuest, joinGame, addCard, removeCard, endGame };

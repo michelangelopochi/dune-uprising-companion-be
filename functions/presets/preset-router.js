@@ -1,13 +1,13 @@
-const express = require('express');
-const { authenticate } = require('../middlewares/auth-middleware');
-const { save, removePreset, loadPreset } = require('./controller/preset-controller');
+import { Router } from 'express';
+import { authenticate } from '../middlewares/auth-middleware.js';
+import { save, removePreset, loadPreset } from './controller/preset-controller.js';
 
-const router = express.Router();
+const presetRouter = Router();
 
-router.post('/save', authenticate, save);
+presetRouter.post('/save', authenticate, save);
 
-router.post('/load', authenticate, loadPreset);
+presetRouter.post('/load', authenticate, loadPreset);
 
-router.post('/delete', authenticate, removePreset);
+presetRouter.post('/delete', authenticate, removePreset);
 
-module.exports = router;
+export default presetRouter;

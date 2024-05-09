@@ -1,7 +1,8 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-require('dotenv').config();
-const Preset = require('./preset');
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const usersDB = mongoose.createConnection(process.env.MONGODB_URI.split("?")[0] + "users");
 
@@ -12,8 +13,8 @@ const userSchema = new mongoose.Schema(
         password: { type: String, required: true },
         avatar: { type: String, default: '' },
         tables_requests_pending: { type: Array, default: [] },
-        presets: [{ type: mongoose.Schema.Types.ObjectId, ref: Preset }],
-        role: { type: String, enum: ['user', 'admin'], default: 'user' },
+        presets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Preset' }],
+        role: { type: String, enum: ['user', 'admin', 'test'], default: 'user' },
         confirmed: { type: Boolean, default: false },
         confirmationToken: { type: String, default: "" },
     },
@@ -44,4 +45,4 @@ userSchema.methods.comparePassword = async function (password) {
 
 const User = usersDB.model('User', userSchema);
 
-module.exports = User;
+export default User;

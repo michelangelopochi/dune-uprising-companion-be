@@ -1,5 +1,7 @@
-const mongoose = require('mongoose');
-require('dotenv').config();
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const cardsDB = mongoose.createConnection(process.env.MONGODB_URI.split("?")[0] + "cards");
 
@@ -26,4 +28,4 @@ const imperiumRowCardSchema = new mongoose.Schema(
 
 const ImperiumRowCard = cardsDB.model('ImperiumRowCard', imperiumRowCardSchema, 'imperium_row');
 
-module.exports = ImperiumRowCard;
+export default ImperiumRowCard;

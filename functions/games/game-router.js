@@ -1,21 +1,21 @@
-const express = require('express');
-const { authenticate } = require('../middlewares/auth-middleware');
-const { getGameCards, create, addGuest, joinGame, addCard, removeCard, endGame } = require('./controller/game-controller');
+import { Router } from "express";
+import { authenticate } from "../middlewares/auth-middleware.js";
+import { create, getGameCards, addGuest, joinGame, addCard, removeCard, endGame } from "./controller/game-controller.js";
 
-const router = express.Router();
+const gameRouter = Router();
 
-router.post('/create', authenticate, create);
+gameRouter.post('/create', authenticate, create);
 
-router.get('/getGameCards', authenticate, getGameCards);
+gameRouter.get('/getGameCards', authenticate, getGameCards);
 
-router.post('/addGuest', authenticate, addGuest);
+gameRouter.post('/addGuest', authenticate, addGuest);
 
-router.post('/join', authenticate, joinGame);
+gameRouter.post('/join', authenticate, joinGame);
 
-router.post('/addCard', authenticate, addCard);
+gameRouter.post('/addCard', authenticate, addCard);
 
-router.post('/removeCard', authenticate, removeCard);
+gameRouter.post('/removeCard', authenticate, removeCard);
 
-router.post('/endGame', authenticate, endGame);
+gameRouter.post('/endGame', authenticate, endGame);
 
-module.exports = router;
+export default gameRouter;

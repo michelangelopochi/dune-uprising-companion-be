@@ -1,19 +1,20 @@
-const express = require('express');
-const { authenticate } = require('../middlewares/auth-middleware');
-const { getUserTables, create, deleteTable, addUser, removeUser, getAllSubscribleUsers } = require('./controller/table-controller');
 
-const router = express.Router();
+import { Router } from 'express';
+import { authenticate } from '../middlewares/auth-middleware.js';
+import { getUserTables, create, deleteTable, addUser, removeUser, getAllSubscribleUsers } from './controller/table-controller.js';
 
-router.get('/getUserTables', authenticate, getUserTables);
+const tableRouter = Router();
 
-router.post('/create', authenticate, create);
+tableRouter.get('/getUserTables', authenticate, getUserTables);
 
-router.post('/delete', authenticate, deleteTable);
+tableRouter.post('/create', authenticate, create);
 
-router.post('/addUser', authenticate, addUser);
+tableRouter.post('/delete', authenticate, deleteTable);
 
-router.post('/removeUser', authenticate, removeUser);
+tableRouter.post('/addUser', authenticate, addUser);
 
-router.post('/getAllSubscribleUsers', authenticate, getAllSubscribleUsers);
+tableRouter.post('/removeUser', authenticate, removeUser);
 
-module.exports = router;
+tableRouter.post('/getAllSubscribleUsers', authenticate, getAllSubscribleUsers);
+
+export default tableRouter;

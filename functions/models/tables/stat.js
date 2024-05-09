@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
-require('dotenv').config();
-const User = require('../user');
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const tableDB = mongoose.createConnection(process.env.MONGODB_URI.split("?")[0] + "tables");
 
@@ -12,4 +13,4 @@ const StatSchema = new mongoose.Schema(
 
 const Stat = tableDB.model('Stat', StatSchema);
 
-module.exports = Stat;
+export default Stat;

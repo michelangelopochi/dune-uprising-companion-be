@@ -1,16 +1,18 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const User = require('../../models/user');
-const Search = require('../../models/search');
-const Preset = require('../../models/preset');
-const ImperiumRowCard = require('../../models/cards/imperium-row-card');
-const IntrigueCard = require('../../models/cards/intrigue-card');
-const { encryptId, decryptId } = require('../../utils/id-encrypter');
-require('dotenv').config();
-const { v4: uuidv4 } = require('uuid');
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+import User from "../../models/user.js";
+import Search from "../../models/search.js";
+import Preset from "../../models/preset.js";
+import ImperiumRowCard from "../../models/cards/imperium-row-card.js";
+import IntrigueCard from "../../models/cards/intrigue-card.js";
+import { encryptId, decryptId } from "../../utils/id-encrypter.js";
+import { v4 as uuidv4 } from 'uuid'
+
+dotenv.config();
 
 // Save a new preset
-const save = async (req, res, next) => {
+export async function save(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -44,7 +46,7 @@ const save = async (req, res, next) => {
 }
 
 // Load a preset by public key
-const loadPreset = async (req, res, next) => {
+export async function loadPreset(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -77,7 +79,7 @@ const loadPreset = async (req, res, next) => {
 }
 
 // Remove a preset from user's preset
-const removePreset = async (req, res, next) => {
+export async function removePreset(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -101,5 +103,3 @@ const removePreset = async (req, res, next) => {
         next(error);
     }
 }
-
-module.exports = { save, removePreset, loadPreset };
