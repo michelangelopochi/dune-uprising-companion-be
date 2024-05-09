@@ -2,7 +2,7 @@ import { Router } from "express";
 import axiosInstance from 'axios';
 import { MongoClient, ServerApiVersion } from "mongodb";
 import dotenv from "dotenv";
-import { createImperiumQueryParams, createIntrigueQueryParams, createMultipleImperiumQueryParams, createMultipleIntrigueQueryParams } from "../utils/query-params-utils.mjs";
+import { createImperiumQueryParams, createIntrigueQueryParams, createMultipleImperiumQueryParams, createMultipleIntrigueQueryParams } from "../utils/query-params-utils.js";
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
 import { encryptId } from "../utils/id-encrypter.js";
 

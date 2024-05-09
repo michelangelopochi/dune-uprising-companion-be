@@ -35,7 +35,6 @@ export function encryptId(array) {
 }
 
 export function decryptId(array) {
-    console.log(array);
     var newArray = [];
     for (const id of array) {
         newArray.push(new ObjectId(decryptData(id)));

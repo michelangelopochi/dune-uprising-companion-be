@@ -30,41 +30,44 @@ export async function create(req, res, next) {
     const { tableKey } = body;
 
     try {
-        if (!_id) {
-            res.status(400).json({ message: 'Invalid user' });
-        }
+        // if (!_id) {
+        //     res.status(400).json({ message: 'Invalid user' });
+        // }
 
-        if (!tableKey) {
-            res.status(400).json({ message: 'Invalid table' });
-        }
+        // if (!tableKey) {
+        //     res.status(400).json({ message: 'Invalid table' });
+        // }
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        // // Initialize Firebase
+        // const app = initializeApp(firebaseConfig);
 
-        database = getDatabase();
-        const tablesRef = ref(database, 'tables');
+        // database = getDatabase();
+        // const tablesRef = ref(database, 'tables');
 
-        console.log("Connessione al db realtime stabilita");
-        console.log("Creazione partita da parte di: " + _id + " - " + username);
+        // console.log("Connessione al db realtime stabilita");
+        // console.log("Creazione partita da parte di: " + _id + " - " + username);
 
-        const createdGame = push(tablesRef, {
-            roomCode: createTableID(6),
-            tableKey: tableKey,
-            host: username,
-            users: {
-                [username]: {
-                    cards: ""
-                }
-            },
-            createdAt: new Date().toISOString()
-        });
+        // const createdGame = push(tablesRef, {
+        //     roomCode: createTableID(6),
+        //     tableKey: tableKey,
+        //     host: username,
+        //     users: {
+        //         [username]: {
+        //             cards: ""
+        //         }
+        //     },
+        //     createdAt: new Date().toISOString()
+        // });
 
-        console.log("Partita creata: " + createdGame.key)
-        console.log("Partita legata al tavolo: " + tableKey);
+        // console.log("Partita creata: " + createdGame.key)
+        // console.log("Partita legata al tavolo: " + tableKey);
 
-        const updatedTable = await Table.findOneAndUpdate({ key: tableKey }, { gameRunning: createdGame.key });
+        // const updatedTable = await Table.findOneAndUpdate({ key: tableKey }, { gameRunning: createdGame.key });
 
-        console.log("Aggiornato tavolo con partita in corso:" + updatedTable.gameRunning);
+        // console.log("Aggiornato tavolo con partita in corso:" + updatedTable.gameRunning);
+
+        var socket = req.app.io;
+        socket.emit("messageEdited", "test")
 
         res.status(200).json({ config: firebaseConfig, gameId: createdGame.key });
     } catch (error) {

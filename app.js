@@ -4,7 +4,7 @@ import { Server } from "socket.io";
 import cors from 'cors';
 import dotenv from 'dotenv';
 import BGGRouter from "./functions/bgg/bgg-router.mjs";
-import cardsRouter from "./functions/cards/cards-router.mjs";
+import cardsRouter from "./functions/cards/cards-router.js";
 import authRouter from "./functions/auth/auth-router.js";
 import userRouter from "./functions/user/user-router.js";
 import presetRouter from "./functions/presets/preset-router.js";
@@ -55,13 +55,9 @@ api.use("/games", gameRouter);
 
 ioServer.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
-
-  // Esempio di invio di un messaggio da parte del server al client
-  socket.on("message", (data) => {
-    console.log("received", data.message)
-    socket.emit("messageEdited", data.message)
-  });
 });
+
+api.io = ioServer;
 
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`)
