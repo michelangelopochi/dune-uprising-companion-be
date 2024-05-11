@@ -46,7 +46,11 @@ api.use("/games", gameRouter);
 // api.use('/', anotherRouter);
 
 const server = http.createServer(api); // Create HTTP server using Express
-const ioServer = new Server(server, { origins: '*:*' }); // Initialize Socket.IO with the HTTP server
+const ioServer = new Server(server, {
+	cors: {
+		origin: '*'
+	}
+}); // Initialize Socket.IO with the HTTP server
 
 ioServer.on("connection", (socket) => {
 	console.log("Client connected:", socket.id);
