@@ -276,6 +276,7 @@ export async function joinGame(req, res, next) {
                             console.log("Il giocatore " + _id + " - " + username + " si è iscritto alla partita " + game.key + " come " + role);
 
                             socket.sockets.in(game.key).emit('userJoin', username + ' joined as ' + role);
+                            socket.sockets.in(game.key).emit("gameUpdated", updatedGame);
 
                             res.status(200).json({ game: updatedGame });
                         }
@@ -374,7 +375,7 @@ export async function removeCard(req, res, next) {
 
                     res.status(400).json({ message: "Card " + cardName + " was not acquired" });
                 } else {
-                    cards.splice(cardIndex);
+                    cards.splice(cardIndex, 1);
 
                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}.cards`]: cards }, { "fields": { "_id": 0 }, new: true });
 
@@ -555,7 +556,7 @@ export async function leave(req, res, next) {
                 var socket = req.app.io;
 
                 socket.sockets.in(game.key).emit("userLeaved", username + ' leaved as ' + role);
-                socket.to(game.key).emit("gameUpdated", updatedGame);
+                socket.sockets.in(game.key).emit("gameUpdated", updatedGame);
 
                 res.status(200).json();
             } else {
@@ -566,6 +567,7 @@ export async function leave(req, res, next) {
 
                     var socket = req.app.io;
                     socket.sockets.in(game.key).emit("userLeaved", username + ' leaved as ' + role);
+                    socket.sockets.in(game.key).emit("gameUpdated", updatedGame);
 
                     res.status(200).json({ game: updatedGame });
                 }
