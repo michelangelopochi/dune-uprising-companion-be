@@ -16,7 +16,10 @@ const presetSchema = new mongoose.Schema(
         thisWeek: { type: Number, default: 1 },
         total: { type: Number, default: 1 }
     },
-    { timestamps: true }
+    {
+        timestamps: true,
+        versionKey: false
+    }
 );
 
 const Preset = cardsDB.model('Preset', presetSchema);

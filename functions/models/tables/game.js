@@ -7,10 +7,33 @@ const tableDB = mongoose.createConnection(process.env.MONGODB_URI.split("?")[0] 
 
 const GameSchema = new mongoose.Schema(
     {
-        users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+        host: { type: String, required: true },
+        key: { type: String, required: true },
+        roomCode: { type: String, required: true },
+        tableKey: { type: String, required: true },
+        players: [{ type: mongoose.Schema.Types.Mixed }],
+        spectators: [{ type: String }]
+    },
+    {
+        timestamps: true,
+        versionKey: false
     }
 );
 
 const Game = tableDB.model('Game', GameSchema);
 
 export default Game;
+
+/**
+ PLAYER OBJECT
+ {
+    username: String
+    cards: [
+        {
+            key: String
+            name: String
+            img: String
+        }
+    ]
+ }
+ */

@@ -15,12 +15,6 @@ import cookieParser from "cookie-parser";
 
 const api = express();
 const router = express.Router();
-const server = http.createServer(api); // Create HTTP server using Express
-const ioServer = new Server(server, {
-  cors: {
-    origin: '*'
-  }
-}); // Initialize Socket.IO with the HTTP server
 const port = process.env.PORT || 3000;
 
 dotenv.config();
@@ -32,13 +26,13 @@ api.use(cookieParser());
 connectDB("users");
 
 router.get("/", (req, res) => {
-  res.status(200).json({ message: "The server is working" })
+	res.status(200).json({ message: "The server is working" })
 });
 
 // Add this error handling middleware
 api.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something went wrong');
+	console.error(err.stack);
+	res.status(500).send('Something went wrong');
 });
 
 api.use("/api", router);
@@ -51,14 +45,22 @@ api.use("/tables", tableRouter);
 api.use("/games", gameRouter);
 // api.use('/', anotherRouter);
 
-// const routeHandler = serverless(api);
+const server = http.createServer(api); // Create HTTP server using Express
+const ioServer = new Server(server, { origins: '*:*' }); // Initialize Socket.IO with the HTTP server
 
 ioServer.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
+	console.log("Client connected:", socket.id);
+
+	socket.on('join', function (username, room, role) {
+		socket.join(room);
+		console.log("Il giocatore " + username + " si è unito alla partita " + room + " come " + role);
+
+		socket.broadcast.to(room).emit('playerJoin', username + ' joined as ' + role);
+	});
 });
 
 api.io = ioServer;
 
 server.listen(port, () => {
-  console.log(`Server listening on port ${port}`)
+	console.log(`Server listening on port ${port}`)
 })

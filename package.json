@@ -24,7 +24,8 @@
     "serverless-http": "^3.2.0",
     "socket.io": "^4.7.5",
     "uuid": "^9.0.1",
-    "validatorjs": "^3.22.1"
+    "validatorjs": "^3.22.1",
+    "yarn": "^1.22.22"
   },
   "engines": {
     "node": ">=14"

@@ -8,6 +8,10 @@ const tableDB = mongoose.createConnection(process.env.MONGODB_URI.split("?")[0] 
 const StatSchema = new mongoose.Schema(
     {
         name: { type: String, required: false } //TODO
+    },
+    {
+        timestamps: true,
+        versionKey: false
     }
 );
 

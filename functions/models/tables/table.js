@@ -14,6 +14,10 @@ const TableSchema = new mongoose.Schema(
         stats: { type: mongoose.Schema.Types.ObjectId, ref: 'Stat' },
         key: { type: String, required: true },
         gameRunning: { type: String, default: "" }
+    },
+    {
+        timestamps: true,
+        versionKey: false
     }
 );
 

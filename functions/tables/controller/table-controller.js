@@ -70,6 +70,7 @@ export async function deleteTable(req, res, next) {
     var user = req.user;
 
     //TODO
+    //TODO rimuovere anche tutte le partite e le statistiche associate al tavolo
     try {
         res.status(200).json({ message: "chiamata create ok" });
     } catch (error) {

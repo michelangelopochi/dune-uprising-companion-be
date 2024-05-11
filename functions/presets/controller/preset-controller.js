@@ -96,7 +96,7 @@ export async function removePreset(req, res, next) {
         await User.updateOne({ _id: _id }, { $pull: { presets: preset._id } });
 
         const updatedUser = await User.findById(_id, '-password')
-            .populate({ path: 'presets', model: Preset, options: { collation: { 'locale': 'en' }, sort: { 'name': 1 } }, select: 'name key -_id' });;
+            .populate({ path: 'presets', model: Preset, options: { collation: { 'locale': 'en' }, sort: { 'name': 1 } }, select: 'name key -_id' });
 
         res.json({ message: 'Preset removed', updatedPresets: updatedUser.presets });
     } catch (error) {

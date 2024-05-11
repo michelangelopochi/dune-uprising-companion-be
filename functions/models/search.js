@@ -13,6 +13,10 @@ const searchSchema = new mongoose.Schema(
         lastSearch: { type: Date, required: true },
         thisWeek: { type: Number, required: true },
         total: { type: Number, required: true },
+    },
+    {
+        timestamps: true,
+        versionKey: false
     }
 );
 

@@ -18,7 +18,10 @@ const userSchema = new mongoose.Schema(
         confirmed: { type: Boolean, default: false },
         confirmationToken: { type: String, default: "" },
     },
-    { timestamps: true }
+    {
+        timestamps: true,
+        versionKey: false
+    }
 );
 
 // Hash the password before saving it to the database

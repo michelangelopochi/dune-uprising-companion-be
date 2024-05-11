@@ -1,26 +1,18 @@
-import { initializeApp } from 'firebase/app';
-import { getAnalytics } from 'firebase/analytics';
-import { getDatabase, ref, get, set, onValue, update, goOffline, push, goOnline, remove, increment } from 'firebase/database';
 import { encryptId } from '../../utils/id-encrypter.js';
+import dotenv from "dotenv";
+import { v4 as uuidv4 } from 'uuid'
+import { ObjectId } from "mongodb";
 import Table from '../../models/tables/table.js';
 import User from '../../models/user.js';
+import Game from '../../models/tables/game.js';
 import ImperiumRowCard from '../../models/cards/imperium-row-card.js';
-import dotenv from "dotenv";
 
 dotenv.config();
 
-var database = null;
-
-var firebaseConfig = {
-    apiKey: "AIzaSyAZySrZE3VSn1l7ztsy1pONtRD_KMPuUr0",
-    authDomain: "dune-uprising-app-test.firebaseapp.com",
-    databaseURL: "https://dune-uprising-app-test-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "dune-uprising-app-test",
-    storageBucket: "dune-uprising-app-test.appspot.com",
-    messagingSenderId: "1071458741447",
-    appId: "1:1071458741447:web:e3672846d7042e55e422e2",
-    measurementId: "G-4EKPJBS3EL"
-};
+const GAME_ROLES = {
+    PLAYER: "PLAYER",
+    SPECTATOR: "SPECTATOR"
+}
 
 export async function create(req, res, next) {
     var user = req.user;
@@ -30,46 +22,40 @@ export async function create(req, res, next) {
     const { tableKey } = body;
 
     try {
-        // if (!_id) {
-        //     res.status(400).json({ message: 'Invalid user' });
-        // }
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
 
-        // if (!tableKey) {
-        //     res.status(400).json({ message: 'Invalid table' });
-        // }
+        if (!tableKey) {
+            res.status(400).json({ message: 'Invalid table' });
+        }
 
-        // // Initialize Firebase
-        // const app = initializeApp(firebaseConfig);
+        console.log("Creazione partita da parte di: " + _id + " - " + username);
 
-        // database = getDatabase();
-        // const tablesRef = ref(database, 'tables');
+        var game = await Game.create({
+            host: username,
+            key: uuidv4(),
+            roomCode: createRoomCode(6),
+            tableKey: tableKey,
+            players: [{
+                username: username,
+                isGuest: false,
+                cards: []
+            }],
+            spectators: []
+        })
 
-        // console.log("Connessione al db realtime stabilita");
-        // console.log("Creazione partita da parte di: " + _id + " - " + username);
+        console.log("Partita creata: " + game.key)
+        console.log("Partita legata al tavolo: " + tableKey);
 
-        // const createdGame = push(tablesRef, {
-        //     roomCode: createTableID(6),
-        //     tableKey: tableKey,
-        //     host: username,
-        //     users: {
-        //         [username]: {
-        //             cards: ""
-        //         }
-        //     },
-        //     createdAt: new Date().toISOString()
-        // });
+        const updatedTable = await Table.findOneAndUpdate({ key: tableKey }, { gameRunning: game.key });
 
-        // console.log("Partita creata: " + createdGame.key)
-        // console.log("Partita legata al tavolo: " + tableKey);
-
-        // const updatedTable = await Table.findOneAndUpdate({ key: tableKey }, { gameRunning: createdGame.key });
-
-        // console.log("Aggiornato tavolo con partita in corso:" + updatedTable.gameRunning);
+        console.log("Aggiornato tavolo con partita in corso:" + game.key);
 
         var socket = req.app.io;
-        socket.emit("messageEdited", "test")
+        socket.emit("gameCreated", game);
 
-        res.status(200).json({ config: firebaseConfig, gameId: createdGame.key });
+        res.status(200).json({ message: "Game created", gameId: game.key, roomCode: game.roomCode });
     } catch (error) {
         next(error);
     }
@@ -109,23 +95,49 @@ export async function addGuest(req, res, next) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        const table = await Table.findOne({ key: tableKey })
+            .populate({ path: 'users', model: User });
 
-        database = getDatabase();
-        const usersRef = ref(database, 'tables/' + gameId + '/users');
+        if (!table) {
+            res.status(400).json({ message: 'Invalid table' });
+        } else {
+            if (table && table.users.some(s => s.username.includes(guestName))) {
+                res.status(400).json({ message: 'Cannot use a username belonging to a player at this table' });
+            } else {
+                const game = await Game.findOne({ key: gameId });
 
-        console.log("Connessione all'oggetto partita stabilita");
+                if (!game) {
+                    res.status(400).json({ message: 'Invalid game' });
+                } else {
+                    //se il giocatore non è già nell'elenco
+                    if (!game.players.some(s => s.username.includes(username))) {
+                        if (game.players.length >= 6) {
+                            res.status(400).json({ message: 'The room has reached the maximum number of players' });
+                        } else {
+                            var players = game.players;
+                            players.push({
+                                username: guestName,
+                                isGuest: true,
+                                cards: []
+                            });
+                            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
 
-        const newPlayer = update(usersRef, {
-            [guestName]: {
-                cards: ""
+                            console.log("L'ospite " + guestName + " è stato aggiunto alla partita " + game.key);
+
+                            var socket = req.app.io;
+                            socket.to(game.key).emit("gameUpdated", updatedGame);
+
+                            res.status(200).json();
+                        }
+                    } else {
+                        //se il giocatore è già nell'elenco
+                        console.log("Un ospite con lo username " + guestName + " è già nella partita " + game.key);
+
+                        res.status(400).json({ message: "Username " + guestName + " already used" });
+                    }
+                }
             }
-        })
-
-        console.log("L'host: " + _id + " - " + username + " ha aggiunto l'ospite: " + guestName);
-
-        res.status(200).json();
+        }
 
     } catch (error) {
         next(error);
@@ -137,51 +149,78 @@ export async function joinGame(req, res, next) {
     var body = req.body;
 
     const { _id, username } = req.user;
-    const { tableKey, roomCode } = body;
+    const { tableKey, roomCode, role } = body;
 
     try {
         if (!_id) {
             res.status(400).json({ message: 'Invalid user' });
         }
 
-        if (!tableKey || !roomCode) {
+        if (!tableKey || !roomCode || !role) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
-        const table = await Table.findOne({ key: tableKey });
+        const table = await Table.findOne({ key: tableKey })
+            .populate({ path: 'owner', model: User })
+            .populate({ path: 'users', model: User });
 
-        if (!table) {
+        if (!table || ((table && table.owner.username !== username) && (table && !table.users.some(s => s.username.includes(username))))) {
             res.status(400).json({ message: 'Invalid table' });
         } else {
             if (table && !table.gameRunning) {
                 res.status(400).json({ message: 'No game runnig for this table' });
             } else {
+                const game = await Game.findOne({ key: table.gameRunning });
 
-                // Initialize Firebase
-                const app = initializeApp(firebaseConfig);
+                if (!game) {
+                    res.status(400).json({ message: 'Invalid table' });
+                } else {
+                    if (role === GAME_ROLES.PLAYER) {
+                        if (game.spectators.includes(username)) {
+                            console.error("Il giocatore " + _id + " - " + username + " ha provato ad unirsi alla partita " + game.key + " come " + GAME_ROLES.PLAYER);
+                            console.error("Il giocatore " + _id + " - " + username + " è già unito alla partita " + game.key + " come " + GAME_ROLES.SPECTATOR);
 
-                database = getDatabase();
-                const usersRef = ref(database, 'tables/' + table.gameRunning + '/users');
-                const playerRef = ref(database, 'tables/' + table.gameRunning + '/users/' + username);
+                            res.status(400).json({ message: 'User is already a spectator' });
+                        } else {
+                            //se il giocatore non è già nell'elenco
+                            if (!game.players.some(s => s.username.includes(username))) {
+                                if (game.players.length >= 6) {
+                                    res.status(400).json({ message: 'The room has reached the maximum number of players' });
+                                } else {
+                                    var players = game.players;
+                                    players.push({
+                                        username: username,
+                                        isGuest: false,
+                                        cards: []
+                                    });
+                                    const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { new: true, select: "-_id" });
 
-                console.log("Connessione all'oggetto partita stabilita");
+                                    console.log("Il giocatore " + _id + " - " + username + " si è iscritto alla partita " + game.key + " come " + role);
 
-                get(playerRef).then((snapshot) => {
-                    if (!snapshot.exists()) {
-                        //se giocatore non si era già unito
-                        const newPlayer = update(usersRef, {
-                            [username]: {
-                                cards: ""
+                                    res.status(200).json({ game: updatedGame });
+                                }
+                            } else {
+                                //se il giocatore è già nell'elenco
+                                console.log("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
+
+                                res.status(200).json({ game: game });
                             }
-                        })
+                        }
+                    } else {
+                        if (game.players.some(s => s.username.includes(username))) {
+                            console.error("Il giocatore " + _id + " - " + username + " ha provato ad unirsi alla partita " + game.key + " come " + GAME_ROLES.PLAYER);
+                            console.error("Il giocatore " + _id + " - " + username + " è già unito alla partita " + game.key + " come " + GAME_ROLES.SPECTATOR);
+
+                            res.status(400).json({ message: 'User is already a spectator' });
+                        } else {
+                            await Game.findOneAndUpdate({ key: game.key }, { $push: { spectators: _id } });
+
+                            console.log("Il giocatore " + _id + " - " + username + " si è iscritto alla partita " + game.key + " come " + role);
+
+                            res.status(200).json({ game: updatedGame });
+                        }
                     }
-                }).catch((error) => {
-                    console.error(error);
-                });
-
-                console.log("Il giocatore " + _id + " - " + username + " si è unito alla partita " + table.gameRunning);
-
-                res.status(200).json({ config: firebaseConfig, gameId: table.gameRunning });
+                }
             }
         }
     } catch (error) {
@@ -205,36 +244,37 @@ export async function addCard(req, res, next) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        const game = await Game.findOne({ key: gameId });
 
-        database = getDatabase();
-        const userCardsRef = ref(database, 'tables/' + gameId + '/users/' + playerId + '/cards');
-        const cardRef = ref(database, 'tables/' + gameId + '/users/' + playerId + '/cards/' + cardId);
+        if (!game) {
+            res.status(400).json({ message: 'Invalid game' });
+        } else {
+            var playerIndex = game.players.findIndex(p => p.username === playerId);
 
-        get(cardRef).then((snapshot) => {
-            if (snapshot.exists()) {
-                //multipla copia
-                const updatedCard = update(cardRef, {
-                    copies: increment(1)
-                })
+            //se il giocatore è nell'elenco
+            if (playerIndex > -1) {
+                var player = game.players[playerIndex];
+
+                var newCard = {
+                    key: cardId,
+                    name: cardName,
+                    img: cardImg
+                };
+                const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { $push: { [`players.${playerIndex}.cards`]: newCard } }, { new: true, select: "-_id" });
+
+                console.log("L'utente: " + playerId + " ha comprato: " + cardName);
+
+                var socket = req.app.io;
+                socket.to(game.key).emit("gameUpdated", updatedGame);
+
+                res.status(200).json();
             } else {
-                //primo acquisto
-                const acquiredCard = update(userCardsRef, {
-                    [cardId]: {
-                        name: cardName,
-                        img: cardImg,
-                        copies: 1
-                    }
-                })
+                console.log("Il giocatore " + playerId + " non esiste nella partita " + game.key);
+
+                res.status(400).json({ message: "Player " + playerId + " does not exists" });
             }
-        }).catch((error) => {
-            console.error(error);
-        });
+        }
 
-        console.log("L'utente: " + playerId + " ha comprato: " + cardName);
-
-        res.status(200).json();
     } catch (error) {
         next(error);
     }
@@ -256,47 +296,43 @@ export async function removeCard(req, res, next) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        const game = await Game.findOne({ key: gameId });
 
-        database = getDatabase();
-        const userRef = ref(database, 'tables/' + gameId + '/users/' + playerId);
-        const userCardsRef = ref(database, 'tables/' + gameId + '/users/' + playerId + '/cards');
-        const cardRef = ref(database, 'tables/' + gameId + '/users/' + playerId + '/cards/' + cardId);
+        if (!game) {
+            res.status(400).json({ message: 'Invalid game' });
+        } else {
+            var playerIndex = game.players.findIndex(p => p.username === playerId);
 
-        get(cardRef).then((snapshot) => {
-            if (snapshot.exists()) {
-                cardData = snapshot.val();
-                if (cardData.copies && cardData.copies > 1) {
-                    const updatedCard = update(cardRef, {
-                        copies: increment(-1)
-                    })
+            //se il giocatore è nell'elenco
+            if (playerIndex > -1) {
+                var cards = game.players[playerIndex].cards;
+
+                var cardIndex = cards.find(c => c.key === cardId);
+
+                if (cardIndex === -1) {
+                    console.log("La carta " + cardName + " non apparteneva al giocatore " + playerId + " nella partita " + game.key);
+
+                    res.status(400).json({ message: "Card " + cardName + " was not acquired" });
                 } else {
-                    get(userCardsRef).then(async (snap) => {
-                        const userCards = snap.val();
-                        //se ci sono altre carte
-                        if (Object.keys(userCards).length > 1) {
-                            await remove(cardRef);
-                        } else {
-                            //se non ci sono altre carte
-                            const removedCard = update(userRef, {
-                                cards: ""
-                            })
-                        }
-                    }).catch((error) => {
-                        console.error(error);
-                    });
+                    cards.splice(cardIndex);
+
+                    const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}.cards`]: cards }, { new: true, select: "-_id" });
+
+                    console.log("L'utente: " + playerId + " ha eliminato: " + cardName);
+
+                    var socket = req.app.io;
+                    socket.to(game.key).emit("gameUpdated", updatedGame);
+
+                    res.status(200).json();
                 }
+
+            } else {
+                console.log("Il giocatore " + playerId + " non esiste nella partita " + game.key);
+
+                res.status(400).json({ message: "Player " + playerId + " does not exists" });
             }
+        }
 
-            console.log("L'utente: " + playerId + " ha eliminato: " + cardName);
-
-        }).catch((error) => {
-            console.error(error);
-        });
-
-
-        res.status(200).json();
     } catch (error) {
         next(error);
     }
@@ -309,7 +345,7 @@ export async function endGame(req, res, next) {
     const { _id, username } = req.user;
     const { gameId, tableKey } = body;
 
-    //TODO salvare dati su mongodb prima di eliminarla da firebase
+    //TODO salvare statistiche prima di eliminarla
     try {
         if (!_id) {
             res.status(400).json({ message: 'Invalid user' });
@@ -319,15 +355,7 @@ export async function endGame(req, res, next) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-
-        database = getDatabase();
-        const gameRef = ref(database, 'tables/' + gameId);
-
-        console.log("Connessione al db realtime stabilita");
-
-        await remove(gameRef);
+        await Game.findOneAndDelete({ key: gameId });
 
         console.log("L'host: " + _id + " - " + username + " ha chiuso manualmente la partita: " + gameId);
 
@@ -335,13 +363,46 @@ export async function endGame(req, res, next) {
 
         console.log("Partita in corso rimossa dal tavolo: " + tableKey);
 
+        var socket = req.app.io;
+        socket.emit("gameEnded", updatedGame);
+
         res.status(200).json({ message: "Game ended" });
     } catch (error) {
         next(error);
     }
 }
 
-function createTableID(length) {
+export async function tryReconnect(req, res, next) {
+    var user = req.user;
+    var body = req.body;
+
+    const { _id, username } = req.user;
+    const { gameId, role } = body;
+
+    try {
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        if (!gameId) {
+            res.status(400).json({ message: 'Invalid params' });
+        }
+
+        const game = await Game.findOne({ key: gameId });
+
+        if (!game) {
+            res.status(400).json({ message: 'Previous game was closed' });
+        } else {
+            console.log("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
+
+            res.status(200).json({ game: game });
+        }
+    } catch (error) {
+        next(error);
+    }
+}
+
+function createRoomCode(length) {
     var result = '';
     const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
     const charactersLength = characters.length;
