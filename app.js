@@ -1,14 +1,16 @@
 import express, { Router } from "express";
+import http from "http";
+import { Server } from "socket.io";
 import cors from 'cors';
 import dotenv from 'dotenv';
 import BGGRouter from "./functions/bgg/bgg-router.mjs";
-import cardsRouter from "./functions/cards/cards-router.mjs";
+import cardsRouter from "./functions/cards/cards-router.js";
 import authRouter from "./functions/auth/auth-router.js";
 import userRouter from "./functions/user/user-router.js";
 import presetRouter from "./functions/presets/preset-router.js";
 import tableRouter from "./functions/tables/table-router.js";
 import gameRouter from "./functions/games/game-router.js";
-import connectDB from "./functions/utils/db.js";
+import { connectDB } from "./functions/utils/db.js";
 import cookieParser from "cookie-parser";
 
 const api = express();
@@ -24,13 +26,13 @@ api.use(cookieParser());
 connectDB("users");
 
 router.get("/", (req, res) => {
-  res.status(200).json({ message: "The server is working" })
+	res.status(200).json({ message: "The server is working" })
 });
 
 // Add this error handling middleware
 api.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something went wrong');
+	console.error(err.stack);
+	res.status(500).send('Something went wrong');
 });
 
 api.use("/api", router);
@@ -43,8 +45,26 @@ api.use("/tables", tableRouter);
 api.use("/games", gameRouter);
 // api.use('/', anotherRouter);
 
-// const routeHandler = serverless(api);
+const server = http.createServer(api); // Create HTTP server using Express
+const ioServer = new Server(server, {
+	cors: {
+		origin: '*'
+	}
+}); // Initialize Socket.IO with the HTTP server
 
-api.listen(port, () => {
-  console.log(`Server listening on port ${port}`)
+ioServer.on("connection", (socket) => {
+	console.log("Client connected:", socket.id);
+
+	socket.on('join', function (username, room, role) {
+		socket.join(room);
+		console.log("Il giocatore " + username + " si è unito alla partita " + room + " come " + role);
+
+		socket.broadcast.to(room).emit('playerJoin', username + ' joined as ' + role);
+	});
+});
+
+api.io = ioServer;
+
+server.listen(port, () => {
+	console.log(`Server listening on port ${port}`)
 })

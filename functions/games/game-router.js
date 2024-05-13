@@ -1,21 +1,31 @@
-const express = require('express');
-const { authenticate } = require('../middlewares/auth-middleware');
-const { getGameCards, create, addGuest, joinGame, addCard, removeCard, endGame } = require('./controller/game-controller');
+import { Router } from "express";
+import { authenticate } from "../middlewares/auth-middleware.js";
+import { create, getGameCards, addGuest, joinGame, addCard, removeCard, endGame, tryReconnect, editGuestName, leave, removeUser, startGame } from "./controller/game-controller.js";
 
-const router = express.Router();
+const gameRouter = Router();
 
-router.post('/create', authenticate, create);
+gameRouter.post('/create', authenticate, create);
 
-router.get('/getGameCards', authenticate, getGameCards);
+gameRouter.get('/getGameCards', authenticate, getGameCards);
 
-router.post('/addGuest', authenticate, addGuest);
+gameRouter.post('/addGuest', authenticate, addGuest);
 
-router.post('/join', authenticate, joinGame);
+gameRouter.post('/removeUser', authenticate, removeUser);
 
-router.post('/addCard', authenticate, addCard);
+gameRouter.post('/join', authenticate, joinGame);
 
-router.post('/removeCard', authenticate, removeCard);
+gameRouter.post('/addCard', authenticate, addCard);
 
-router.post('/endGame', authenticate, endGame);
+gameRouter.post('/removeCard', authenticate, removeCard);
 
-module.exports = router;
+gameRouter.post('/endGame', authenticate, endGame);
+
+gameRouter.post('/tryReconnect', authenticate, tryReconnect);
+
+gameRouter.post('/editGuestName', authenticate, editGuestName);
+
+gameRouter.post('/leave', authenticate, leave);
+
+gameRouter.post('/startGame', authenticate, startGame);
+
+export default gameRouter;

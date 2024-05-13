@@ -1,11 +1,13 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
-const Preset = require('../models/preset');
-const Search = require('../models/search');
-const { connectDB, disconnectDB } = require('../utils/db');
-require('dotenv').config();
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import User from "../models/user.js";
+import Preset from "../models/preset.js";
+import Search from "../models/search.js";
+import { connectDB } from "../utils/db.js";
 
-const authenticate = async (req, res, next) => {
+dotenv.config();
+
+export async function authenticate(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1];
     const refreshToken = req.cookies['refreshToken'];
 
@@ -40,5 +42,3 @@ const authenticate = async (req, res, next) => {
         }
     }
 };
-
-module.exports = { authenticate };

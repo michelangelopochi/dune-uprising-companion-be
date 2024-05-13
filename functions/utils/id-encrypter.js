@@ -1,26 +1,28 @@
-const crypto = require('crypto');
-require('dotenv').config();
-const { ObjectId } = require('mongodb');
+import crypto from "crypto";
+import dotenv from "dotenv";
+import { ObjectId } from "mongodb";
+
+dotenv.config();
 
 const algorithm = 'aes-256-cbc';
 const key = crypto.scryptSync(process.env.SECRET_ID_CRYPT_KEY, 'GfG', 32)
 const iv = Buffer.alloc(16, 0);
 
-const encryptData = (data) => {
+export function encryptData(data) {
     const cipher = crypto.createCipheriv(algorithm, key, iv);
     var encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return encrypted;
 }
 
-const decryptData = (encryptedData) => {
+export function decryptData(encryptedData) {
     const decipher = crypto.createDecipheriv(algorithm, key, iv);
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
 }
 
-const encryptId = (array) => {
+export function encryptId(array) {
     var newArray = [];
     for (const object of array) {
         var newObject = object["_doc"] ? object["_doc"] : object;
@@ -32,13 +34,10 @@ const encryptId = (array) => {
     return newArray;
 }
 
-const decryptId = (array) => {
-    console.log(array);
+export function decryptId(array) {
     var newArray = [];
     for (const id of array) {
         newArray.push(new ObjectId(decryptData(id)));
     }
     return newArray;
 }
-
-module.exports = { encryptId, decryptId };

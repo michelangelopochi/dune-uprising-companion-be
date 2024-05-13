@@ -1,10 +1,12 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const User = require('../../models/user');
-require('dotenv').config();
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+import User from "../../models/user.js";
+
+dotenv.config();
 
 // Register a new user
-const register = async (req, res, next) => {
+export async function register(req, res, next) {
     const { username, email, password } = req.body;
 
     try {
@@ -23,7 +25,7 @@ const register = async (req, res, next) => {
 };
 
 // Login with an existing user
-const login = async (req, res, next) => {
+export async function login(req, res, next) {
     const { username, password } = req.body;
 
     try {
@@ -45,5 +47,3 @@ const login = async (req, res, next) => {
         next(error);
     }
 };
-
-module.exports = { register, login };

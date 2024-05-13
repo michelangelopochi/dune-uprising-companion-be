@@ -2,15 +2,13 @@ import { Router } from "express";
 import axiosInstance from 'axios';
 import { MongoClient, ServerApiVersion } from "mongodb";
 import dotenv from "dotenv";
-import { createImperiumQueryParams, createIntrigueQueryParams, createMultipleImperiumQueryParams, createMultipleIntrigueQueryParams } from "../utils/query-params-utils.mjs";
+import { createImperiumQueryParams, createIntrigueQueryParams, createMultipleImperiumQueryParams, createMultipleIntrigueQueryParams } from "../utils/query-params-utils.js";
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
-import encryptPackage from "../utils/id-encrypter.js";
+import { encryptId } from "../utils/id-encrypter.js";
 
 dotenv.config();
 const cardsRouter = Router();
 const mongoUri = process.env.MONGODB_URI;
-
-const { encryptId } = encryptPackage;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(mongoUri, {
