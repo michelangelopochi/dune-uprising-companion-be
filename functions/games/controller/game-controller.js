@@ -253,13 +253,13 @@ export async function joinGame(req, res, next) {
 
                                     socket.sockets.in(game.key).emit('userJoin', username + ' joined as ' + role);
 
+                                    socket.to(game.key).emit("gameUpdated", updatedGame);
+
                                     res.status(200).json({ game: updatedGame });
                                 }
                             } else {
                                 //se il giocatore è già nell'elenco
                                 console.log("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
-
-                                socket.sockets.in(game.key).emit('userJoin', username + ' joined as ' + role);
 
                                 res.status(200).json({ game: game });
                             }
