@@ -11,8 +11,9 @@ const GameSchema = new mongoose.Schema(
         key: { type: String, required: true },
         roomCode: { type: String, required: true },
         tableKey: { type: String, required: true },
-        players: [{ type: mongoose.Schema.Types.Mixed }],
-        spectators: [{ type: String }]
+        players: [{ type: mongoose.Schema.Types.Mixed }], //player.js
+        spectators: [{ type: String }],
+        startedAt: { type: Date, default: "" }
     },
     {
         timestamps: true,
@@ -23,17 +24,3 @@ const GameSchema = new mongoose.Schema(
 const Game = tableDB.model('Game', GameSchema);
 
 export default Game;
-
-/**
- PLAYER OBJECT
- {
-    username: String
-    cards: [
-        {
-            key: String
-            name: String
-            img: String
-        }
-    ]
- }
- */

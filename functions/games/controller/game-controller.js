@@ -222,7 +222,7 @@ export async function joinGame(req, res, next) {
             if (table && !table.gameRunning) {
                 res.status(400).json({ message: 'No game runnig for this table' });
             } else {
-                const game = await Game.findOne({ key: table.gameRunning });
+                const game = await Game.findOne({ key: table.gameRunning }, { _id: 0 });
 
                 if (!game) {
                     res.status(400).json({ message: 'Invalid table' });
@@ -449,7 +449,7 @@ export async function tryReconnect(req, res, next) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
-        const game = await Game.findOne({ key: gameId });
+        const game = await Game.findOne({ key: gameId }, { _id: 0 });
 
         if (!game) {
             res.status(400).json({ message: 'Previous game was closed' });
@@ -573,6 +573,42 @@ export async function leave(req, res, next) {
                 }
             }
         }
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function startGame(req, res, next) {
+    var user = req.user;
+    var body = req.body;
+
+    const { _id, username } = req.user;
+    const { gameId } = body;
+
+    try {
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        if (!gameId) {
+            res.status(400).json({ message: 'Invalid params' });
+        }
+
+        const game = await Game.findOne({ key: gameId });
+
+        if (!game) {
+            res.status(400).json({ message: 'Invalid game' });
+        } else {
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { startedAt: new Date() }, { "fields": { "_id": 0 }, new: true });
+
+            console.log("La partita " + game.key + " è stata avviata da " + _id + " - " + username);
+
+            var socket = req.app.io;
+            socket.to(game.key).emit("gameUpdated", updatedGame);
+
+            res.status(200).json();
+        }
+
     } catch (error) {
         next(error);
     }
