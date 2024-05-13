@@ -171,7 +171,7 @@ export async function getAllSubscribleUsers(req, res, next) {
         } else {
             var table = await Table.findOne({ key: tableKey });
             if (table) {
-                users = await User.find({ $and: [{ _id: { $ne: _id } }, { $or: [{ _id: { $ne: table.owner } }, { _id: { $in: table.users } }] }] }, 'username avatar -_id');
+                users = await User.find({ $and: [{ _id: { $ne: _id } }, { role: { $ne: 'test' } }, { $or: [{ _id: { $ne: table.owner } }, { _id: { $in: table.users } }] }] }, 'username avatar -_id');
             }
         }
 
