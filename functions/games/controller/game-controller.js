@@ -119,7 +119,7 @@ export async function addGuest(req, res, next) {
         if (!table) {
             res.status(400).json({ message: 'Invalid table' });
         } else {
-            if (table && table.users.some(s => s.username.includes(guestName))) {
+            if (table && table.users.some(s => s.username === guestName)) {
                 res.status(400).json({ message: 'Cannot use a username belonging to a player at this table' });
             } else {
                 const game = await Game.findOne({ key: gameId });
@@ -128,7 +128,7 @@ export async function addGuest(req, res, next) {
                     res.status(400).json({ message: 'Invalid game' });
                 } else {
                     //se il giocatore non è già nell'elenco
-                    if (!game.players.some(s => s.username.includes(guestName))) {
+                    if (!game.players.some(s => s.username === guestName)) {
                         if (game.players.length >= 6) {
                             res.status(400).json({ message: 'The room has reached the maximum number of players' });
                         } else {
@@ -184,7 +184,7 @@ export async function removeUser(req, res, next) {
             res.status(400).json({ message: 'Invalid game' });
         } else {
             //se il giocatore è nell'elenco
-            if (game.players.some(s => s.username.includes(playerId))) {
+            if (game.players.some(s => s.username === playerId)) {
                 var players = game.players;
 
                 var playerIndex = game.players.findIndex(p => p.username === playerId);
@@ -234,7 +234,7 @@ export async function joinGame(req, res, next) {
             .populate({ path: 'owner', model: User })
             .populate({ path: 'users', model: User });
 
-        if (!table || ((table && table.owner.username !== username) && (table && !table.users.some(s => s.username.includes(username))))) {
+        if (!table || ((table && table.owner.username !== username) && (table && !table.users.some(s => s.username === username)))) {
             res.status(400).json({ message: 'Invalid table' });
         } else {
             if (table && !table.gameRunning) {
@@ -255,7 +255,7 @@ export async function joinGame(req, res, next) {
                             res.status(400).json({ message: 'User is already a spectator' });
                         } else {
                             //se il giocatore non è già nell'elenco
-                            if (!game.players.some(s => s.username.includes(username))) {
+                            if (!game.players.some(s => s.username === username)) {
                                 if (game.players.length >= 6) {
                                     res.status(400).json({ message: 'The room has reached the maximum number of players' });
                                 } else {
@@ -283,16 +283,14 @@ export async function joinGame(req, res, next) {
                             }
                         }
                     } else {
-                        if (game.players.some(s => s.username.includes(username))) {
+                        if (game.players.some(s => s.username === username)) {
                             console.error("Il giocatore " + _id + " - " + username + " ha provato ad unirsi alla partita " + game.key + " come " + GAME_ROLES.SPECTATOR);
                             console.error("Il giocatore " + _id + " - " + username + " è già unito alla partita " + game.key + " come " + GAME_ROLES.PLAYER);
 
                             res.status(400).json({ message: 'User is already a player' });
                         } else {
 
-                            var spectatorIndex = game.spectators.findIndex(s => s.username === username);
-
-                            if (spectatorIndex === -1) {
+                            if (!game.spectators.includes(username)) {
                                 const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { $push: { spectators: username } }, { "fields": { "_id": 0 }, new: true });
 
                                 console.log("Il giocatore " + _id + " - " + username + " si unisce alla partita " + game.key + " come " + role);
