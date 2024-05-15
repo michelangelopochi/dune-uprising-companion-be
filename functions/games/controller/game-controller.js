@@ -289,14 +289,24 @@ export async function joinGame(req, res, next) {
 
                             res.status(400).json({ message: 'User is already a player' });
                         } else {
-                            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { $push: { spectators: username } }, { "fields": { "_id": 0 }, new: true });
 
-                            console.log("Il giocatore " + _id + " - " + username + " si è iscritto alla partita " + game.key + " come " + role);
+                            var spectatorIndex = game.spectators.findIndex(s => s.username === username);
 
-                            socket.sockets.in(game.key).emit('userJoin', username + ' joined as ' + role);
-                            socket.sockets.in(game.key).emit("gameUpdated", updatedGame);
+                            if (spectatorIndex === -1) {
+                                const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { $push: { spectators: username } }, { "fields": { "_id": 0 }, new: true });
 
-                            res.status(200).json({ game: updatedGame });
+                                console.log("Il giocatore " + _id + " - " + username + " si unisce alla partita " + game.key + " come " + role);
+
+                                socket.sockets.in(game.key).emit('userJoin', username + ' joined as ' + role);
+                                socket.sockets.in(game.key).emit("gameUpdated", updatedGame);
+                                res.status(200).json({ game: updatedGame });
+                            } else {
+                                console.log("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
+
+                                res.status(200).json({ game: game });
+                            }
+
+
                         }
                     }
                 }
