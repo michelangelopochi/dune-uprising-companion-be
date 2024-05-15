@@ -521,8 +521,8 @@ export async function editGuestName(req, res, next) {
         if (!table) {
             res.status(400).json({ message: 'Invalid table' });
         } else {
-            if (table && table.users.some(s => s.username.includes(guestName))) {
-                res.status(400).json({ message: 'Cannot use a username belonging to a player at this table' });
+            if (table && table.users.some(s => s.username.toLowerCase() === guestName.toLowerCase())) {
+                res.status(400).json({ message: 'Cannot use a username belonging to another player at this table' });
             } else {
                 const game = await Game.findOne({ key: gameId });
 
@@ -530,7 +530,7 @@ export async function editGuestName(req, res, next) {
                     res.status(400).json({ message: 'Invalid game' });
                 } else {
                     //se il nuovo nome non è già in uso
-                    if (!game.players.some(s => s.username.toLowerCase().includes(newName.toLowerCase()))) {
+                    if (!game.players.some(s => s.username.toLowerCase() === newName.toLowerCase())) {
                         var playerIndex = game.players.findIndex(p => p.username === guestName);
                         const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}.username`]: newName }, { "fields": { "_id": 0 }, new: true });
 
