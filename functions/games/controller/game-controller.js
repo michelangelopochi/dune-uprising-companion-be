@@ -521,7 +521,7 @@ export async function editGuestName(req, res, next) {
         if (!table) {
             res.status(400).json({ message: 'Invalid table' });
         } else {
-            if (table && table.users.some(s => s.username === guestName)) {
+            if (table && table.users.some(s => s.username.toLowerCase() === guestName.toLowerCase())) {
                 res.status(400).json({ message: 'Cannot use a username belonging to another player at this table' });
             } else {
                 const game = await Game.findOne({ key: gameId });
