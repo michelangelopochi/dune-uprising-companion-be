@@ -303,8 +303,6 @@ export async function joinGame(req, res, next) {
                             } else {
                                 console.log("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
 
-                                socket.sockets.in(game.key).emit('userJoin', username + ' joined as ' + role);
-
                                 res.status(200).json({ game: game });
                             }
 
