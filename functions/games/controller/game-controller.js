@@ -71,7 +71,25 @@ export async function getGameCards(req, res, next) {
             res.status(400).json({ message: 'Invalid user' });
         }
 
-        const gameCards = await ImperiumRowCard.find({}, '_id img name').sort({ name: 1 });
+        // const gameCards = await ImperiumRowCard.find({}, '_id img name copy').sort({ name: 1 });
+
+        const gameCards = await ImperiumRowCard.aggregate([
+            {
+                $addFields: {
+                    sortOrder: {
+                        $switch: {
+                            branches: [
+                                { case: { $eq: ["$type", "PREPARE_THE_WAY"] }, then: 1 },
+                                { case: { $eq: ["$type", "TSMF"] }, then: 2 },
+                                { case: { $eq: ["$type", "IMPERIUM_ROW"] }, then: 3 }
+                            ],
+                            default: 4 // In caso di tipi non corrispondenti, li posizioniamo alla fine
+                        }
+                    }
+                }
+            },
+            { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
+        ]).project("_id img name copy");
 
         res.status(200).json({ gameCards: encryptId(gameCards) });
     } catch (error) {
@@ -289,19 +307,19 @@ export async function joinGame(req, res, next) {
     }
 }
 
-export async function addCard(req, res, next) {
+export async function addCards(req, res, next) {
     var user = req.user;
     var body = req.body;
 
     const { _id, username } = req.user;
-    const { gameId, playerId, cardId, cardName, cardImg } = body;
+    const { gameId, playerId, cards } = body;
 
     try {
         if (!_id) {
             res.status(400).json({ message: 'Invalid user' });
         }
 
-        if (!gameId || !playerId || !cardId || !cardName || !cardImg) {
+        if (!gameId || !playerId || cards.length < 1) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
@@ -316,14 +334,26 @@ export async function addCard(req, res, next) {
             if (playerIndex > -1) {
                 var player = game.players[playerIndex];
 
-                var newCard = {
-                    key: cardId,
-                    name: cardName,
-                    img: cardImg
-                };
-                const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { $push: { [`players.${playerIndex}.cards`]: newCard } }, { "fields": { "_id": 0 }, new: true });
+                var playerCards = player.cards;
 
-                console.log("L'utente: " + playerId + " ha comprato: " + cardName);
+                for (const card of cards) {
+                    var cardIndex = playerCards.findIndex(c => c.key === card.key);
+                    //se già presente
+                    if (cardIndex > -1) {
+                        playerCards[cardIndex].copy = playerCards[cardIndex].copy + 1;
+                    } else {
+                        playerCards.push({
+                            key: card.key,
+                            name: card.name,
+                            img: card.img,
+                            copy: 1
+                        });
+                    }
+                }
+
+                const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}.cards`]: playerCards }, { "fields": { "_id": 0 }, new: true });
+
+                console.log("L'utente: " + playerId + " ha comprato: " + cards.map(c => c.name).join(" - "));
 
                 var socket = req.app.io;
                 socket.to(game.key).emit("gameUpdated", updatedGame);
@@ -368,14 +398,20 @@ export async function removeCard(req, res, next) {
             if (playerIndex > -1) {
                 var cards = game.players[playerIndex].cards;
 
-                var cardIndex = cards.find(c => c.key === cardId);
+                var cardIndex = cards.findIndex(c => c.key === cardId);
 
                 if (cardIndex === -1) {
                     console.log("La carta " + cardName + " non apparteneva al giocatore " + playerId + " nella partita " + game.key);
 
                     res.status(400).json({ message: "Card " + cardName + " was not acquired" });
                 } else {
-                    cards.splice(cardIndex, 1);
+
+                    //se presente in più copie
+                    if (cards[cardIndex].copy > 1) {
+                        cards[cardIndex].copy = cards[cardIndex].copy - 1;
+                    } else {
+                        cards.splice(cardIndex, 1);
+                    }
 
                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}.cards`]: cards }, { "fields": { "_id": 0 }, new: true });
 

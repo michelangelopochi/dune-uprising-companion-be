@@ -6,7 +6,8 @@ const Player = {
         {
             key: "",
             name: "",
-            img: ""
+            img: "",
+            copy: 0
         }
     ]
 }
