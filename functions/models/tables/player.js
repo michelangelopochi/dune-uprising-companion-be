@@ -13,6 +13,7 @@ const Player = {
     tempTime: "00:00:00", //valore temporaneo per gestire aggiornamento cronometro
     totalPoints: 1,
     tsmfAcquired: 0,
+    conflictPoints: 0,
     otherPoints: 0,
     fremenFriendship: false,
     beneGesseritFriendship: false,
@@ -25,6 +26,7 @@ const Player = {
     solari: 0,
     spice: 0,
     water: 1,
+    troops: 0,
     cards: [
         {
             key: "",

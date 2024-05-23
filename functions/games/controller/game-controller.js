@@ -89,8 +89,6 @@ export async function getGameCards(req, res, next) {
             res.status(400).json({ message: 'Invalid user' });
         }
 
-        // const gameCards = await ImperiumRowCard.find({}, '_id img name copy').sort({ name: 1 });
-
         const gameCards = await ImperiumRowCard.aggregate([
             {
                 $addFields: {
@@ -110,6 +108,53 @@ export async function getGameCards(req, res, next) {
         ]).project("_id img name copy");
 
         res.status(200).json({ gameCards: encryptId(gameCards) });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getGameLeaders(req, res, next) {
+    var user = req.user;
+
+    const { _id, username } = req.user;
+
+    try {
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        //TODO aggiungere al db con nome e immagine
+        // const gameCards = await ImperiumRowCard.aggregate([
+        //     {
+        //         $addFields: {
+        //             sortOrder: {
+        //                 $switch: {
+        //                     branches: [
+        //                         { case: { $eq: ["$type", "PREPARE_THE_WAY"] }, then: 1 },
+        //                         { case: { $eq: ["$type", "TSMF"] }, then: 2 },
+        //                         { case: { $eq: ["$type", "IMPERIUM_ROW"] }, then: 3 }
+        //                     ],
+        //                     default: 4 // In caso di tipi non corrispondenti, li posizioniamo alla fine
+        //                 }
+        //             }
+        //         }
+        //     },
+        //     { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
+        // ]).project("_id img name copy");
+
+        const gameLeaders = [
+            "FEYD-RAUTHA HARKONNEN",
+            "GURNEY HALLECK",
+            "LADY AMBER METULLI",
+            "LADY JESSICA",
+            "LADY MARGOT FENRING",
+            "MUAD'DIB",
+            "PRINCESS IRULAN",
+            "SHADDAM CORRINO IV",
+            "STABAN TUEK"
+        ];
+
+        res.status(200).json({ gameLeaders: gameLeaders });
     } catch (error) {
         next(error);
     }
@@ -353,6 +398,8 @@ export async function addCards(req, res, next) {
                 var player = game.players[playerIndex];
 
                 var playerCards = player.cards;
+                var playerTotalPoints = game.players[playerIndex].totalPoints;
+                var playerTSMF = game.players[playerIndex].tsmfAcquired;
 
                 for (const card of cards) {
                     var cardIndex = playerCards.findIndex(c => c.key === card.key);
@@ -367,9 +414,18 @@ export async function addCards(req, res, next) {
                             copy: 1
                         });
                     }
+
+                    if (card.name === "THE SPICE MUST FLOW") {
+                        playerTotalPoints++;
+                        playerTSMF++;
+                    }
                 }
 
-                const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}.cards`]: playerCards }, { "fields": { "_id": 0 }, new: true });
+                const updatedGame = await Game.findOneAndUpdate({ key: game.key }, {
+                    [`players.${playerIndex}.cards`]: playerCards,
+                    [`players.${playerIndex}.totalPoints`]: playerTotalPoints,
+                    [`players.${playerIndex}.tsmfAcquired`]: playerTSMF
+                }, { "fields": { "_id": 0 }, new: true });
 
                 console.log("L'utente: " + playerId + " ha comprato: " + cards.map(c => c.name).join(" - "));
 
@@ -632,7 +688,7 @@ export async function leave(req, res, next) {
     }
 }
 
-export async function startGame(req, res, next) {
+export async function selectOrder(req, res, next) {
     var user = req.user;
     var body = req.body;
 
@@ -662,7 +718,50 @@ export async function startGame(req, res, next) {
                 randomOrderedPlayers[index].colorCode = randomOrderedColors[index].code;
             }
 
-            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { startedAt: new Date(), players: randomOrderedPlayers }, { "fields": { "_id": 0 }, new: true });
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: randomOrderedPlayers }, { "fields": { "_id": 0 }, new: true });
+
+            console.log("L'ordine dei giocatori della partita " + game.key + " è stato deciso");
+
+            var socket = req.app.io;
+            socket.to(game.key).emit("gameUpdated", updatedGame);
+
+            res.status(200).json();
+        }
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function startGame(req, res, next) {
+    var user = req.user;
+    var body = req.body;
+
+    const { _id, username } = req.user;
+    const { gameId, players } = body;
+
+    try {
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        if (!gameId) {
+            res.status(400).json({ message: 'Invalid params' });
+        }
+
+        const game = await Game.findOne({ key: gameId });
+
+        if (!game) {
+            res.status(400).json({ message: 'Invalid game' });
+        } else {
+
+            var updatedPlayers = game.players;
+
+            for (let index = 0; index < players.length; index++) {
+                updatedPlayers[index].leader = players[index].leader;
+            }
+
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { startedAt: new Date(), players: updatedPlayers }, { "fields": { "_id": 0 }, new: true });
 
             console.log("La partita " + game.key + " è stata avviata da " + _id + " - " + username);
 
@@ -775,6 +874,51 @@ export async function stopTurn(req, res, next) {
     }
 }
 
+export async function updatePlayer(req, res, next) {
+    var user = req.user;
+    var body = req.body;
+
+    const { _id, username } = req.user;
+    const { gameId, playerId, value } = body;
+
+    try {
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        if (!gameId || !playerId || !value) {
+            res.status(400).json({ message: 'Invalid params' });
+        }
+
+        const game = await Game.findOne({ key: gameId });
+
+        if (!game) {
+            res.status(400).json({ message: 'Invalid game' });
+        } else {
+
+            var players = game.players;
+
+            var playerIndex = game.players.findIndex(p => p.username === playerId);
+            if (playerIndex > -1) {
+                var updatedPlayer = game.players[playerIndex];
+                for (const key of Object.keys(value)) {
+                    updatedPlayer[key] = value[key];
+                }
+            }
+
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}`]: updatedPlayer }, { "fields": { "_id": 0 }, new: true });
+
+            var socket = req.app.io;
+            socket.to(game.key).emit("gameUpdated", updatedGame);
+
+            res.status(200).json();
+        }
+
+    } catch (error) {
+        next(error);
+    }
+}
+
 function createRoomCode(length) {
     var result = '';
     const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
@@ -801,6 +945,7 @@ function createNewPlayer(username, isGuest) {
         tempTime: "00:00:00",
         totalPoints: 1,
         tsmfAcquired: 0,
+        conflictPoints: 0,
         otherPoints: 0,
         fremenFriendship: false,
         beneGesseritFriendship: false,
@@ -813,6 +958,7 @@ function createNewPlayer(username, isGuest) {
         solari: 0,
         spice: 0,
         water: 1,
+        troops: 3,
         cards: [
             {
                 key: "",
