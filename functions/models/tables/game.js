@@ -13,7 +13,11 @@ const GameSchema = new mongoose.Schema(
         tableKey: { type: String, required: true },
         players: [{ type: mongoose.Schema.Types.Mixed }], //player.js
         spectators: [{ type: String }],
-        startedAt: { type: Date, default: "" }
+        leaders: [{ type: String }],
+        removedLeaders: [{ type: String }],
+        startedAt: { type: Date, default: "" },
+        duration: { type: String, default: "" },
+        roundPlayed: { type: Number, default: 0 },
     },
     {
         timestamps: true,
