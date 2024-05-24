@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import User from "../../models/user.js";
 import Table from "../../models/tables/table.js";
 import { v4 as uuidv4 } from 'uuid'
+import { logger } from "../../utils/logger.js";
 
 dotenv.config();
 
@@ -58,7 +59,7 @@ export async function create(req, res, next) {
             key: uuidv4()
         });
 
-        console.log(`L'utente ${_id} - ${username} ha creato il tavolo ${name} - ${tableCreated.key}`);
+        logger.info(`L'utente ${_id} - ${username} ha creato il tavolo ${name} - ${tableCreated.key}`);
 
         res.status(200).json({ message: "Table created" });
     } catch (error) {
@@ -97,7 +98,7 @@ export async function addUser(req, res, next) {
         var userFound = await User.findOne({ username: userToAdd });
 
         if (!userFound) {
-            console.log(`L'utente ${userToAdd} non è stato trovato`);
+            logger.info(`L'utente ${userToAdd} non è stato trovato`);
             res.status(400).json({ message: 'No user found' });
         }
 
@@ -107,7 +108,7 @@ export async function addUser(req, res, next) {
             .populate({ path: 'owner', model: User, options: { collation: { 'locale': 'en' }, sort: { 'username': 1 } }, select: 'username avatar -_id' })
             .populate({ path: 'users', model: User, options: { collation: { 'locale': 'en' }, sort: { 'username': 1 } }, select: 'username avatar -_id' });
 
-        console.log(`L'utente ${_id} - ${username} ha aggiunto l'utente ${userFound._id} - ${userToAdd} al tavolo ${tableKey}`);
+        logger.info(`L'utente ${_id} - ${username} ha aggiunto l'utente ${userFound._id} - ${userToAdd} al tavolo ${tableKey}`);
 
         res.status(200).json({ message: "User " + userToAdd + " added", table: updatedTable });
     } catch (error) {
@@ -134,7 +135,7 @@ export async function removeUser(req, res, next) {
         var userFound = await User.findOne({ username: userToRemove });
 
         if (!userFound) {
-            console.log(`L'utente ${userToRemove} non è stato trovato`);
+            logger.info(`L'utente ${userToRemove} non è stato trovato`);
             res.status(400).json({ message: 'No user found' });
         }
 
@@ -144,7 +145,7 @@ export async function removeUser(req, res, next) {
             .populate({ path: 'owner', model: User, options: { collation: { 'locale': 'en' }, sort: { 'username': 1 } }, select: 'username avatar -_id' })
             .populate({ path: 'users', model: User, options: { collation: { 'locale': 'en' }, sort: { 'username': 1 } }, select: 'username avatar -_id' });
 
-        console.log(`L'utente ${_id} - ${username} ha rimosso l'utente ${userFound._id} - ${userToRemove} dal tavolo ${tableKey}`);
+        logger.info(`L'utente ${_id} - ${username} ha rimosso l'utente ${userFound._id} - ${userToRemove} dal tavolo ${tableKey}`);
 
         res.status(200).json({ message: "User " + userToRemove + " removed", table: updatedTable });
     } catch (error) {
@@ -175,7 +176,7 @@ export async function getAllSubscribleUsers(req, res, next) {
             }
         }
 
-        console.log(`L'utente ${_id} - ${username} ha cercato gli utenti iscrivibili al tavolo ${tableKey ? tableKey : ''}`);
+        logger.info(`L'utente ${_id} - ${username} ha cercato gli utenti iscrivibili al tavolo ${tableKey ? tableKey : ''}`);
 
         res.status(200).json({ users: users });
     } catch (error) {

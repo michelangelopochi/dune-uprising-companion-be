@@ -8,6 +8,8 @@ import Game from '../../models/tables/game.js';
 import ImperiumRowCard from '../../models/cards/imperium-row-card.js';
 import { timerFormatter, timeStringToMilliseconds } from '../../utils/date-formatter.js';
 
+import { logger } from '../../utils/logger.js';
+
 dotenv.config();
 
 const GAME_ROLES = {
@@ -50,7 +52,7 @@ export async function create(req, res, next) {
             res.status(400).json({ message: 'Invalid table' });
         }
 
-        console.log("Creazione partita da parte di: " + _id + " - " + username);
+        logger.info("Creazione partita da parte di: " + _id + " - " + username);
 
         var newPlayer = createNewPlayer(username, false);
 
@@ -63,12 +65,12 @@ export async function create(req, res, next) {
             spectators: []
         })
 
-        console.log("Partita creata: " + game.key)
-        console.log("Partita legata al tavolo: " + tableKey);
+        logger.info("Partita creata: " + game.key)
+        logger.info("Partita legata al tavolo: " + tableKey);
 
         const updatedTable = await Table.findOneAndUpdate({ key: tableKey }, { gameRunning: game.key });
 
-        console.log("Aggiornato tavolo con partita in corso:" + game.key);
+        logger.info("Aggiornato tavolo con partita in corso:" + game.key);
 
         var socket = req.app.io;
         socket.emit("gameCreated", game);
@@ -199,7 +201,7 @@ export async function addGuest(req, res, next) {
                             players.push(createNewPlayer(guestName, true));
                             const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
 
-                            console.log("L'ospite " + guestName + " è stato aggiunto alla partita " + game.key);
+                            logger.info("L'ospite " + guestName + " è stato aggiunto alla partita " + game.key);
 
                             var socket = req.app.io;
                             socket.to(game.key).emit("gameUpdated", updatedGame);
@@ -208,7 +210,7 @@ export async function addGuest(req, res, next) {
                         }
                     } else {
                         //se il giocatore è già nell'elenco
-                        console.log("Un ospite con lo username " + guestName + " è già nella partita " + game.key);
+                        logger.info("Un ospite con lo username " + guestName + " è già nella partita " + game.key);
 
                         res.status(400).json({ message: "Username " + guestName + " already used" });
                     }
@@ -254,7 +256,7 @@ export async function removeUser(req, res, next) {
 
                 const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
 
-                console.log("L'utente " + playerId + " è stato rimosso dalla partita " + game.key);
+                logger.info("L'utente " + playerId + " è stato rimosso dalla partita " + game.key);
 
                 var socket = req.app.io;
                 socket.to(game.key).emit("gameUpdated", updatedGame);
@@ -262,7 +264,7 @@ export async function removeUser(req, res, next) {
                 res.status(200).json();
             } else {
                 //se il giocatore non è nell'elenco
-                console.log("L'utente con lo username " + playerId + " non esiste nella partita nella partita " + game.key);
+                logger.info("L'utente con lo username " + playerId + " non esiste nella partita nella partita " + game.key);
 
                 res.status(400).json({ message: "Username " + playerId + " not in game" });
             }
@@ -322,7 +324,7 @@ export async function joinGame(req, res, next) {
                                     players.push(createNewPlayer(username, false));
                                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
 
-                                    console.log("Il giocatore " + _id + " - " + username + " si è iscritto alla partita " + game.key + " come " + role);
+                                    logger.info("Il giocatore " + _id + " - " + username + " si è iscritto alla partita " + game.key + " come " + role);
 
                                     socket.sockets.in(game.key).emit('userJoin', username + ' joined as ' + role);
 
@@ -332,7 +334,7 @@ export async function joinGame(req, res, next) {
                                 }
                             } else {
                                 //se il giocatore è già nell'elenco
-                                console.log("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
+                                logger.info("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
 
                                 res.status(200).json({ game: game });
                             }
@@ -348,13 +350,13 @@ export async function joinGame(req, res, next) {
                             if (!game.spectators.includes(username)) {
                                 const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { $push: { spectators: username } }, { "fields": { "_id": 0 }, new: true });
 
-                                console.log("Il giocatore " + _id + " - " + username + " si unisce alla partita " + game.key + " come " + role);
+                                logger.info("Il giocatore " + _id + " - " + username + " si unisce alla partita " + game.key + " come " + role);
 
                                 socket.sockets.in(game.key).emit('userJoin', username + ' joined as ' + role);
                                 socket.sockets.in(game.key).emit("gameUpdated", updatedGame);
                                 res.status(200).json({ game: updatedGame });
                             } else {
-                                console.log("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
+                                logger.info("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
 
                                 res.status(200).json({ game: game });
                             }
@@ -427,14 +429,14 @@ export async function addCards(req, res, next) {
                     [`players.${playerIndex}.tsmfAcquired`]: playerTSMF
                 }, { "fields": { "_id": 0 }, new: true });
 
-                console.log("L'utente: " + playerId + " ha comprato: " + cards.map(c => c.name).join(" - "));
+                logger.info("L'utente: " + playerId + " ha comprato: " + cards.map(c => c.name).join(" - "));
 
                 var socket = req.app.io;
                 socket.to(game.key).emit("gameUpdated", updatedGame);
 
                 res.status(200).json();
             } else {
-                console.log("Il giocatore " + playerId + " non esiste nella partita " + game.key);
+                logger.info("Il giocatore " + playerId + " non esiste nella partita " + game.key);
 
                 res.status(400).json({ message: "Player " + playerId + " does not exists" });
             }
@@ -475,7 +477,7 @@ export async function removeCard(req, res, next) {
                 var cardIndex = cards.findIndex(c => c.key === cardId);
 
                 if (cardIndex === -1) {
-                    console.log("La carta " + cardName + " non apparteneva al giocatore " + playerId + " nella partita " + game.key);
+                    logger.info("La carta " + cardName + " non apparteneva al giocatore " + playerId + " nella partita " + game.key);
 
                     res.status(400).json({ message: "Card " + cardName + " was not acquired" });
                 } else {
@@ -489,7 +491,7 @@ export async function removeCard(req, res, next) {
 
                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}.cards`]: cards }, { "fields": { "_id": 0 }, new: true });
 
-                    console.log("L'utente: " + playerId + " ha eliminato: " + cardName);
+                    logger.info("L'utente: " + playerId + " ha eliminato: " + cardName);
 
                     var socket = req.app.io;
                     socket.to(game.key).emit("gameUpdated", updatedGame);
@@ -498,7 +500,7 @@ export async function removeCard(req, res, next) {
                 }
 
             } else {
-                console.log("Il giocatore " + playerId + " non esiste nella partita " + game.key);
+                logger.info("Il giocatore " + playerId + " non esiste nella partita " + game.key);
 
                 res.status(400).json({ message: "Player " + playerId + " does not exists" });
             }
@@ -528,11 +530,11 @@ export async function endGame(req, res, next) {
 
         await Game.findOneAndDelete({ key: gameId });
 
-        console.log("L'host: " + _id + " - " + username + " ha chiuso manualmente la partita: " + gameId);
+        logger.info("L'host: " + _id + " - " + username + " ha chiuso manualmente la partita: " + gameId);
 
         const updatedTable = await Table.findOneAndUpdate({ key: tableKey }, { gameRunning: "" });
 
-        console.log("Partita in corso rimossa dal tavolo: " + tableKey);
+        logger.info("Partita in corso rimossa dal tavolo: " + tableKey);
 
         var socket = req.app.io;
         socket.emit("gameEnded", {});
@@ -564,7 +566,7 @@ export async function tryReconnect(req, res, next) {
         if (!game) {
             res.status(400).json({ message: 'Previous game was closed' });
         } else {
-            console.log("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
+            logger.info("Il giocatore " + _id + " - " + username + " si riunisce alla partita " + game.key + " come " + role);
 
             res.status(200).json({ game: game });
         }
@@ -608,7 +610,7 @@ export async function editGuestName(req, res, next) {
                         var playerIndex = game.players.findIndex(p => p.username === guestName);
                         const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}.username`]: newName }, { "fields": { "_id": 0 }, new: true });
 
-                        console.log("L'ospite " + guestName + " è stato modificato in " + newName + " nella partita " + game.key);
+                        logger.info("L'ospite " + guestName + " è stato modificato in " + newName + " nella partita " + game.key);
 
                         var socket = req.app.io;
                         socket.to(game.key).emit("gameUpdated", updatedGame);
@@ -616,7 +618,7 @@ export async function editGuestName(req, res, next) {
                         res.status(200).json();
                     } else {
                         //se il nuovo nome è già in uso
-                        console.log("Un giocatore con lo username " + newName + " è già nella partita " + game.key);
+                        logger.info("Un giocatore con lo username " + newName + " è già nella partita " + game.key);
 
                         res.status(400).json({ message: "Username " + newName + " already used" });
                     }
@@ -661,7 +663,7 @@ export async function leave(req, res, next) {
 
                 const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
 
-                console.log("L'utente " + _id + " - " + username + " ha abbandonato la partita " + game.key + " come " + role);
+                logger.info("L'utente " + _id + " - " + username + " ha abbandonato la partita " + game.key + " come " + role);
 
                 var socket = req.app.io;
 
@@ -673,7 +675,7 @@ export async function leave(req, res, next) {
                 if (game.spectators.includes(username)) {
                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { $pull: { spectators: username } }, { "fields": { "_id": 0 }, new: true });
 
-                    console.log("Il giocatore " + _id + " - " + username + " ha lasciato la partita " + game.key + " come " + role);
+                    logger.info("Il giocatore " + _id + " - " + username + " ha lasciato la partita " + game.key + " come " + role);
 
                     var socket = req.app.io;
                     socket.sockets.in(game.key).emit("userLeaved", username + ' leaved as ' + role);
@@ -720,7 +722,7 @@ export async function selectOrder(req, res, next) {
 
             const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: randomOrderedPlayers }, { "fields": { "_id": 0 }, new: true });
 
-            console.log("L'ordine dei giocatori della partita " + game.key + " è stato deciso");
+            logger.info("L'ordine dei giocatori della partita " + game.key + " è stato deciso");
 
             var socket = req.app.io;
             socket.to(game.key).emit("gameUpdated", updatedGame);
@@ -763,7 +765,7 @@ export async function startGame(req, res, next) {
 
             const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { startedAt: new Date(), players: updatedPlayers }, { "fields": { "_id": 0 }, new: true });
 
-            console.log("La partita " + game.key + " è stata avviata da " + _id + " - " + username);
+            logger.info("La partita " + game.key + " è stata avviata da " + _id + " - " + username);
 
             var socket = req.app.io;
             socket.to(game.key).emit("gameUpdated", updatedGame);
