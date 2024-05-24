@@ -27,7 +27,7 @@ export async function authenticate(req, res, next) {
         req.user = user;
         next();
     } catch (error) {
-        console.log(error);
+        logger.info(error);
         if (!refreshToken) {
             return res.status(401).json({ message: 'Access Denied. No refresh token provided.' });
         }

@@ -12,6 +12,7 @@ import tableRouter from "./functions/tables/table-router.js";
 import gameRouter from "./functions/games/game-router.js";
 import { connectDB } from "./functions/utils/db.js";
 import cookieParser from "cookie-parser";
+import { logger } from "./functions/utils/logger.js";
 
 const api = express();
 const router = express.Router();
@@ -53,11 +54,11 @@ const ioServer = new Server(server, {
 }); // Initialize Socket.IO with the HTTP server
 
 ioServer.on("connection", (socket) => {
-	console.log("Client connected:", socket.id);
+	logger.info("Client connected:", socket.id);
 
 	socket.on('join', function (username, room, role) {
 		socket.join(room);
-		console.log("Il giocatore " + username + " si è unito alla partita " + room + " come " + role);
+		logger.info("Il giocatore " + username + " si è unito alla partita " + room + " come " + role);
 
 		socket.broadcast.to(room).emit('playerJoin', username + ' joined as ' + role);
 	});
@@ -66,5 +67,5 @@ ioServer.on("connection", (socket) => {
 api.io = ioServer;
 
 server.listen(port, () => {
-	console.log(`Server listening on port ${port}`)
+	logger.info(`Server listening on port ${port}`)
 })
