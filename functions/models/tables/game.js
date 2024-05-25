@@ -14,7 +14,7 @@ const GameSchema = new mongoose.Schema(
         players: [{ type: mongoose.Schema.Types.Mixed }], //player.js
         spectators: [{ type: String }],
         leaders: [{ type: String }],
-        removedLeaders: [{ type: String }],
+        excludedLeaders: [{ type: String }],
         cards: [{ type: mongoose.Schema.Types.Mixed, ref: 'StartingDeckCard' }],
         startedAt: { type: Date, default: "" },
         duration: { type: String, default: "" },

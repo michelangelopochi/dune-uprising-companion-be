@@ -10,6 +10,7 @@ import { timerFormatter, timeStringToMilliseconds } from '../../utils/date-forma
 import StartingDeckCard from '../../models/cards/starting-deck-card.js';
 
 import { logger } from '../../utils/logger.js';
+import { leaderRandomize } from '../../utils/leader-randomizer.js';
 
 dotenv.config();
 
@@ -77,6 +78,8 @@ export async function create(req, res, next) {
             { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
         ]).project("_id img name copy");
 
+        var leaders = leaderRandomize(2);
+
         var game = await Game.create({
             host: username,
             key: uuidv4(),
@@ -84,6 +87,8 @@ export async function create(req, res, next) {
             tableKey: tableKey,
             players: [newPlayer],
             spectators: [],
+            leaders: leaders.gameLeaders,
+            excludedLeaders: leaders.excludedLeaders,
             cards: encryptId(gameCards)
         })
 
