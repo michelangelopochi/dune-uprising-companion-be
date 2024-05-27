@@ -11,6 +11,7 @@ const Player = {
     activeDate: "",
     time: "00:00:00",
     tempTime: "00:00:00", //valore temporaneo per gestire aggiornamento cronometro
+    turnOrder: 1,
     totalPoints: 1,
     tsmfAcquired: 0,
     conflictPoints: 0,

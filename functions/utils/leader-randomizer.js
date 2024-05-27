@@ -1,15 +1,15 @@
 export function leaderRandomize(leaderToExclude) {
     const leaders = [
-        "FEYD-RAUTHA HARKONNEN",
-        "GURNEY HALLECK",
-        "LADY AMBER METULLI",
-        "LADY JESSICA",
-        "LADY MARGOT FENRING",
-        "MUAD'DIB",
-        "PRINCESS IRULAN",
-        "SHADDAM CORRINO IV",
-        "STABAN TUEK"
-    ]
+        "feyd-rautha-harkonnen",
+        "gurney-halleck",
+        "lady-amber-metulli",
+        "lady-jessica",
+        "lady-margot-fenring",
+        "muad-dib",
+        "princess-irulan",
+        "shaddam-corrino-iv",
+        "staban-tuek",
+    ];
 
     var indexToExclude = [];
 

@@ -172,15 +172,15 @@ export async function getGameLeaders(req, res, next) {
         // ]).project("_id img name copy");
 
         const gameLeaders = [
-            "FEYD-RAUTHA HARKONNEN",
-            "GURNEY HALLECK",
-            "LADY AMBER METULLI",
-            "LADY JESSICA",
-            "LADY MARGOT FENRING",
-            "MUAD'DIB",
-            "PRINCESS IRULAN",
-            "SHADDAM CORRINO IV",
-            "STABAN TUEK"
+            "feyd-rautha-harkonnen",
+            "gurney-halleck",
+            "lady-amber-metulli",
+            "lady-jessica",
+            "lady-margot-fenring",
+            "muad-dib",
+            "princess-irulan",
+            "shaddam-corrino-iv",
+            "staban-tuek",
         ];
 
         res.status(200).json({ gameLeaders: gameLeaders });
@@ -671,7 +671,7 @@ export async function endGame(req, res, next) {
         var socket = req.app.io;
         socket.emit("gameEnded", {});
 
-        res.status(200).json({ message: "Game ended" });
+        res.status(200).json({ message: "Room closed" });
     } catch (error) {
         next(error);
     }
@@ -848,11 +848,12 @@ export async function selectOrder(req, res, next) {
             var randomOrderedColors = PLAYER_COLORS.sort(() => Math.random() - 0.5);
 
             for (let index = 0; index < randomOrderedPlayers.length; index++) {
+                randomOrderedPlayers[index].turnOrder = index + 1;
                 randomOrderedPlayers[index].color = randomOrderedColors[index].name;
                 randomOrderedPlayers[index].colorCode = randomOrderedColors[index].code;
             }
 
-            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: randomOrderedPlayers }, { "fields": { "_id": 0 }, new: true });
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: randomOrderedPlayers, playerToSelectLeader: randomOrderedPlayers[randomOrderedPlayers.length - 1].username }, { "fields": { "_id": 0 }, new: true });
 
             logger.info("L'ordine dei giocatori della partita " + game.key + " è stato deciso");
 
@@ -903,6 +904,47 @@ export async function startGame(req, res, next) {
             socket.to(game.key).emit("gameUpdated", updatedGame);
 
             res.status(200).json();
+        }
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function stopGame(req, res, next) {
+    var user = req.user;
+    var body = req.body;
+
+    const { _id, username } = req.user;
+    const { gameId } = body;
+
+    try {
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        if (!gameId) {
+            res.status(400).json({ message: 'Invalid params' });
+        }
+
+        const game = await Game.findOne({ key: gameId });
+
+        if (!game) {
+            res.status(400).json({ message: 'Invalid game' });
+        } else {
+
+            var stoppedAt = new Date();
+
+            var duration = stoppedAt.getTime() - new Date(game.startedAt).getTime();
+
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { stoppedAt: stoppedAt, duration: timerFormatter(duration) }, { "fields": { "_id": 0 }, new: true });
+
+            logger.info("La partita " + game.key + " è stata fermata da " + _id + " - " + username);
+
+            var socket = req.app.io;
+            socket.to(game.key).emit("gameUpdated", updatedGame);
+
+            res.status(200).json({ message: "Game stopped" });
         }
 
     } catch (error) {
@@ -1008,6 +1050,53 @@ export async function stopTurn(req, res, next) {
     }
 }
 
+export async function selectLeader(req, res, next) {
+    var user = req.user;
+    var body = req.body;
+
+    const { _id, username } = req.user;
+    const { gameId, playerId, leader } = body;
+
+    try {
+        if (!_id) {
+            res.status(400).json({ message: 'Invalid user' });
+        }
+
+        if (!gameId || !playerId || !leader) {
+            res.status(400).json({ message: 'Invalid params' });
+        }
+
+        const game = await Game.findOne({ key: gameId });
+
+        if (!game) {
+            res.status(400).json({ message: 'Invalid game' });
+        } else {
+
+            var players = game.players;
+            var updatedLeaders = game.leaders;
+
+            var playerIndex = game.players.findIndex(p => p.username === playerId);
+            if (playerIndex > -1) {
+                var updatedPlayer = game.players[playerIndex];
+                updatedPlayer.leader = leader;
+                updatedLeaders = updatedLeaders.filter(l => l !== leader);
+            }
+
+            var nextPlayer = playerIndex > 0 ? game.players[playerIndex - 1].username : "";
+
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}`]: updatedPlayer, playerToSelectLeader: nextPlayer, leaders: updatedLeaders }, { "fields": { "_id": 0 }, new: true });
+
+            var socket = req.app.io;
+            socket.to(game.key).emit("gameUpdated", updatedGame);
+
+            res.status(200).json();
+        }
+
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function updatePlayer(req, res, next) {
     var user = req.user;
     var body = req.body;
@@ -1077,6 +1166,7 @@ function createNewPlayer(username, startingCards, isGuest) {
         activeDate: new Date(),
         time: "00:00:00",
         tempTime: "00:00:00",
+        turnOrder: 0,
         totalPoints: 1,
         tsmfAcquired: 0,
         conflictPoints: 0,
