@@ -11,6 +11,7 @@ const Player = {
     activeDate: "",
     time: "00:00:00",
     tempTime: "00:00:00", //valore temporaneo per gestire aggiornamento cronometro
+    turnOrder: 1,
     totalPoints: 1,
     tsmfAcquired: 0,
     conflictPoints: 0,
@@ -27,6 +28,14 @@ const Player = {
     spice: 0,
     water: 1,
     troops: 0,
+    startingDeck: [
+        {
+            key: "",
+            name: "",
+            img: "",
+            copy: 0
+        }
+    ],
     cards: [
         {
             key: "",
@@ -34,5 +43,14 @@ const Player = {
             img: "",
             copy: 0
         }
+    ],
+    trashedCards: [
+        {
+            key: "",
+            name: "",
+            img: "",
+            copy: 0
+        }
     ]
+
 }
