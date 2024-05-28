@@ -886,7 +886,7 @@ export async function startGame(req, res, next) {
 
         const game = await Game.findOne({ key: gameId });
 
-        if (!game) {
+        if (!game || game.stoppedAt) {
             res.status(400).json({ message: 'Invalid game' });
         } else {
 
@@ -929,7 +929,7 @@ export async function stopGame(req, res, next) {
 
         const game = await Game.findOne({ key: gameId });
 
-        if (!game) {
+        if (!game || !game.startedAt) {
             res.status(400).json({ message: 'Invalid game' });
         } else {
 
@@ -1080,6 +1080,11 @@ export async function selectLeader(req, res, next) {
                 var updatedPlayer = game.players[playerIndex];
                 updatedPlayer.leader = leader;
                 updatedLeaders = updatedLeaders.filter(l => l !== leader);
+
+                //se il leder è Staban, va rimossa diplomazia (usando la key per evitare problemi multilingua)
+                if (leader === "staban-tuek") {
+                    updatedPlayer.startingDeck = updatedPlayer.startingDeck.filter(c => c.key !== "b3769b09bbfa2f79c64e8487ae6d6882f58ce5618085e63d1398f42ab384251a");
+                }
             }
 
             var nextPlayer = playerIndex > 0 ? game.players[playerIndex - 1].username : "";
@@ -1126,10 +1131,25 @@ export async function updatePlayer(req, res, next) {
                 var updatedPlayer = game.players[playerIndex];
                 for (const key of Object.keys(value)) {
                     updatedPlayer[key] = value[key];
+
+                    //se un giocatore ha preso un'alleanza, la rimuove dagli altri giocatori
+                    if (["fremenAlliance", "beneGesseritAlliance", "spacingGuildAlliance", "emperorAlliance"].includes(key) && updatedPlayer[key] === true) {
+                        for (let otherPlayerIndex = 0; otherPlayerIndex < players.length; otherPlayerIndex++) {
+                            //se non è lo stesso giocatore
+                            if (otherPlayerIndex !== playerIndex) {
+                                if (players[otherPlayerIndex][key]) {
+                                    players[otherPlayerIndex][key] = false;
+                                    players[otherPlayerIndex].totalPoints--;
+                                }
+                            }
+                        }
+                    }
                 }
+
+                players[playerIndex] = updatedPlayer;
             }
 
-            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { [`players.${playerIndex}`]: updatedPlayer }, { "fields": { "_id": 0 }, new: true });
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
 
             var socket = req.app.io;
             socket.to(game.key).emit("gameUpdated", updatedGame);
