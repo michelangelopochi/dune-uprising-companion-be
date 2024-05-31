@@ -16,7 +16,7 @@ const GameSchema = new mongoose.Schema(
         leaders: [{ type: String }],
         excludedLeaders: [{ type: String }],
         playerToSelectLeader: { type: String, default: "" },
-        cards: [{ type: mongoose.Schema.Types.Mixed, ref: 'StartingDeckCard' }],
+        cards: [{ type: mongoose.Schema.Types.Mixed, ref: 'ImperiumRowCard' }],
         startedAt: { type: Date, default: "" },
         stoppedAt: { type: Date, default: "" },
         duration: { type: String, default: "" },
