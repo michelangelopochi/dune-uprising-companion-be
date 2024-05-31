@@ -9,6 +9,7 @@
     "start": "nodemon app.js"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudwatch-logs": "^3.587.0",
     "axios": "^1.6.8",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
@@ -26,6 +27,7 @@
     "uuid": "^9.0.1",
     "validatorjs": "^3.22.1",
     "winston": "^3.13.0",
+    "winston-cloudwatch": "^6.3.0",
     "yarn": "^1.22.22"
   },
   "engines": {
