@@ -69,7 +69,14 @@ export async function addCards(req, res, next) {
                 var playerTotalPoints = game.players[playerIndex].totalPoints;
                 var playerTSMF = game.players[playerIndex].tsmfAcquired;
 
+                var updatedCards = game.cards;
+
                 for (const card of cards) {
+                    updatedCards = changeGameCards(card, game.cards, true);
+                    if (!updatedCards) {
+                        return res.status(400).json({ message: card.name + ' is no more available' });
+                    }
+
                     var cardIndex = playerCards.findIndex(c => c.key === card.key);
                     //se già presente
                     if (cardIndex > -1) {
@@ -92,7 +99,8 @@ export async function addCards(req, res, next) {
                 const updatedGame = await Game.findOneAndUpdate({ key: game.key }, {
                     [`players.${playerIndex}.cards`]: playerCards,
                     [`players.${playerIndex}.totalPoints`]: playerTotalPoints,
-                    [`players.${playerIndex}.tsmfAcquired`]: playerTSMF
+                    [`players.${playerIndex}.tsmfAcquired`]: playerTSMF,
+                    cards: updatedCards
                 }, { "fields": { "_id": 0 }, new: true });
 
                 logger.info("L'utente: " + playerId + " ha comprato: " + cards.map(c => c.name).join(" - "));
@@ -149,7 +157,11 @@ export async function addGuest(req, res, next) {
                             res.status(400).json({ message: 'The room has reached the maximum number of players' });
                         } else {
                             var players = game.players;
-                            const startingCards = await StartingDeckCard.find({}, "_id img name copy");
+                            var startingCards = await StartingDeckCard.find({}, "_id img name copy");
+
+                            for (let startingCardIndex = 0; startingCardIndex < startingCards.length; startingCardIndex++) {
+                                startingCards[startingCardIndex].isStartingDeckCard = true;
+                            }
 
                             players.push(createNewPlayer(guestName, startingCards, true));
 
@@ -195,7 +207,11 @@ export async function create(req, res, next) {
 
         logger.info("Creazione partita da parte di: " + _id + " - " + username);
 
-        const startingCards = await StartingDeckCard.find({}, "_id img name copy");
+        var startingCards = await StartingDeckCard.find({}, "_id img name copy");
+
+        for (let startingCardIndex = 0; startingCardIndex < startingCards.length; startingCardIndex++) {
+            startingCards[startingCardIndex].isStartingDeckCard = true;
+        }
 
         var newPlayer = createNewPlayer(username, startingCards, false);
 
@@ -207,9 +223,9 @@ export async function create(req, res, next) {
                             branches: [
                                 { case: { $eq: ["$type", "PREPARE_THE_WAY"] }, then: 1 },
                                 { case: { $eq: ["$type", "TSMF"] }, then: 2 },
-                                { case: { $eq: ["$type", "IMPERIUM_ROW"] }, then: 3 }
+                                // { case: { $eq: ["$type", "IMPERIUM_ROW"] }, then: 3 }
                             ],
-                            default: 4 // In caso di tipi non corrispondenti, li posizioniamo alla fine
+                            default: 3 // In caso di tipi non corrispondenti, li posizioniamo alla fine
                         }
                     }
                 }
@@ -228,7 +244,7 @@ export async function create(req, res, next) {
             spectators: [],
             leaders: leaders.gameLeaders,
             excludedLeaders: leaders.excludedLeaders,
-            cards: encryptId(gameCards)
+            cards: changeIdToKey(encryptId(gameCards), false)
         })
 
         logger.info("Partita creata: " + game.key)
@@ -337,87 +353,6 @@ export async function endGame(req, res, next) {
     }
 }
 
-export async function getGameCards(req, res, next) {
-    var user = req.user;
-
-    const { _id, username } = req.user;
-
-    try {
-        if (!_id) {
-            res.status(400).json({ message: 'Invalid user' });
-        }
-
-        const gameCards = await ImperiumRowCard.aggregate([
-            {
-                $addFields: {
-                    sortOrder: {
-                        $switch: {
-                            branches: [
-                                { case: { $eq: ["$type", "PREPARE_THE_WAY"] }, then: 1 },
-                                { case: { $eq: ["$type", "TSMF"] }, then: 2 },
-                                { case: { $eq: ["$type", "IMPERIUM_ROW"] }, then: 3 }
-                            ],
-                            default: 4 // In caso di tipi non corrispondenti, li posizioniamo alla fine
-                        }
-                    }
-                }
-            },
-            { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
-        ]).project("_id img name copy");
-
-        res.status(200).json({ gameCards: encryptId(gameCards) });
-    } catch (error) {
-        next(error);
-    }
-}
-
-export async function getGameLeaders(req, res, next) {
-    var user = req.user;
-
-    const { _id, username } = req.user;
-
-    try {
-        if (!_id) {
-            res.status(400).json({ message: 'Invalid user' });
-        }
-
-        //TODO aggiungere al db con nome e immagine
-        // const gameCards = await ImperiumRowCard.aggregate([
-        //     {
-        //         $addFields: {
-        //             sortOrder: {
-        //                 $switch: {
-        //                     branches: [
-        //                         { case: { $eq: ["$type", "PREPARE_THE_WAY"] }, then: 1 },
-        //                         { case: { $eq: ["$type", "TSMF"] }, then: 2 },
-        //                         { case: { $eq: ["$type", "IMPERIUM_ROW"] }, then: 3 }
-        //                     ],
-        //                     default: 4 // In caso di tipi non corrispondenti, li posizioniamo alla fine
-        //                 }
-        //             }
-        //         }
-        //     },
-        //     { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
-        // ]).project("_id img name copy");
-
-        const gameLeaders = [
-            "feyd-rautha-harkonnen",
-            "gurney-halleck",
-            "lady-amber-metulli",
-            "lady-jessica",
-            "lady-margot-fenring",
-            "muad-dib",
-            "princess-irulan",
-            "shaddam-corrino-iv",
-            "staban-tuek",
-        ];
-
-        res.status(200).json({ gameLeaders: gameLeaders });
-    } catch (error) {
-        next(error);
-    }
-}
-
 export async function joinGame(req, res, next) {
     var user = req.user;
     var body = req.body;
@@ -465,7 +400,11 @@ export async function joinGame(req, res, next) {
                                 } else {
                                     var players = game.players;
 
-                                    const startingCards = await StartingDeckCard.find({}, "_id img name copy");
+                                    var startingCards = await StartingDeckCard.find({}, "_id img name copy");
+
+                                    for (let startingCardIndex = 0; startingCardIndex < startingCards.length; startingCardIndex++) {
+                                        startingCards[startingCardIndex].isStartingDeckCard = true;
+                                    }
 
                                     players.push(createNewPlayer(username, startingCards, false));
                                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
@@ -577,20 +516,20 @@ export async function leave(req, res, next) {
     }
 }
 
-/* Remove card acquired for error */
+/* Remove card acquired or trashed for error */
 export async function removeCard(req, res, next) {
     var user = req.user;
     var body = req.body;
 
     const { _id, username } = req.user;
-    const { gameId, playerId, cardId, cardName, cardPool } = body;
+    const { gameId, playerId, cardId, cardName, cardImg, cardPool } = body;
 
     try {
         if (!_id) {
             res.status(400).json({ message: 'Invalid user' });
         }
 
-        if (!gameId || !playerId || !cardId || !cardPool) {
+        if (!gameId || !playerId || !cardId || !cardImg || !cardPool) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
@@ -604,6 +543,8 @@ export async function removeCard(req, res, next) {
             //se il giocatore è nell'elenco
             if (playerIndex > -1) {
                 var cards = game.players[playerIndex][cardPool];
+                //serve solo se si ripristina una carta della fila impero da quelle eliminate
+                var playerCards = game.players[playerIndex].cards;
 
                 var cardIndex = cards.findIndex(c => c.key === cardId);
 
@@ -612,6 +553,28 @@ export async function removeCard(req, res, next) {
 
                     res.status(400).json({ message: "Card " + cardName + " was not acquired" });
                 } else {
+                    var updatedCards = game.cards;
+                    var updatedStartingDeck = game.players[playerIndex].startingDeck;
+
+                    if (!cards[cardIndex].isStartingDeckCard) {
+                        if (cardPool === 'cards') {
+                            updatedCards = changeGameCards({ key: cardId, name: cardName, img: cardImg }, game.cards, false);
+                            if (!updatedCards) {
+                                return res.status(400).json({ message: 'Error during card restore' });
+                            }
+                        }
+                        if (cardPool === 'trashedCards') {
+                            playerCards = changeGameCards({ key: cardId, name: cardName, img: cardImg }, playerCards, false);
+                            if (!updatedCards) {
+                                return res.status(400).json({ message: 'Error during card restore' });
+                            }
+                        }
+                    } else {
+                        updatedStartingDeck = changeGameCards({ key: cardId, name: cardName, img: cardImg }, game.players[playerIndex].startingDeck, false, true);
+                        if (!updatedStartingDeck) {
+                            return res.status(400).json({ message: 'Error during card restore' });
+                        }
+                    }
 
                     var card = cards[cardIndex];
 
@@ -632,8 +595,11 @@ export async function removeCard(req, res, next) {
 
                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, {
                         [`players.${playerIndex}.${cardPool}`]: cards,
+                        [`players.${playerIndex}.cards`]: playerCards, //non ha effetto se cardPool === 'cards'
                         [`players.${playerIndex}.totalPoints`]: playerTotalPoints,
-                        [`players.${playerIndex}.tsmfAcquired`]: playerTSMF
+                        [`players.${playerIndex}.tsmfAcquired`]: playerTSMF,
+                        [`players.${playerIndex}.startingDeck`]: updatedStartingDeck,
+                        cards: updatedCards
                     }, { "fields": { "_id": 0 }, new: true });
 
                     logger.info("L'utente: " + playerId + " ha rimosso (non eliminato): " + cardName);
@@ -1005,14 +971,14 @@ export async function trashCard(req, res, next) {
     var body = req.body;
 
     const { _id, username } = req.user;
-    const { gameId, playerId, cardId, cardName, cardPool } = body;
+    const { gameId, playerId, cardId, cardName, cardImg, cardPool } = body;
 
     try {
         if (!_id) {
             res.status(400).json({ message: 'Invalid user' });
         }
 
-        if (!gameId || !playerId || !cardId || !cardPool) {
+        if (!gameId || !playerId || !cardId || !cardName || !cardImg || !cardPool) {
             res.status(400).json({ message: 'Invalid params' });
         }
 
@@ -1034,6 +1000,13 @@ export async function trashCard(req, res, next) {
 
                     res.status(400).json({ message: "Card " + cardName + " was not acquired" });
                 } else {
+                    var updatedCards = game.cards;
+                    if (cardName === "THE SPICE MUST FLOW" || cardName === "PREPARE THE WAY") {
+                        updatedCards = changeGameCards({ key: cardId, name: cardName, img: cardImg }, game.cards, false);
+                        if (!updatedCards) {
+                            return res.status(400).json({ message: 'Error during card restore' });
+                        }
+                    }
                     var trashedCards = game.players[playerIndex].trashedCards;
                     var trashedCard = cards[cardIndex];
 
@@ -1050,17 +1023,21 @@ export async function trashCard(req, res, next) {
                     if (trashedCardIndex > -1) {
                         trashedCards[trashedCardIndex].copy = trashedCards[trashedCardIndex].copy + 1;
                     } else {
-                        trashedCards.push({
+                        var newTrashedCard = {
                             key: trashedCard.key,
                             name: trashedCard.name,
                             img: trashedCard.img,
                             copy: 1
-                        });
+                        };
+                        if (cardPool === "startingDeck")
+                            newTrashedCard.isStartingDeckCard = true;
+                        trashedCards.push(newTrashedCard);
                     }
 
                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, {
                         [`players.${playerIndex}.${cardPool}`]: cards,
                         [`players.${playerIndex}.trashedCards`]: trashedCards,
+                        cards: updatedCards
                     }, { "fields": { "_id": 0 }, new: true });
 
                     logger.info("L'utente: " + playerId + " ha eliminato: " + cardName);
@@ -1173,16 +1150,59 @@ export async function updatePlayer(req, res, next) {
     }
 }
 
-function createRoomCode(length) {
-    var result = '';
-    const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
-    const charactersLength = characters.length;
-    var counter = 0;
-    while (counter < length) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-        counter += 1;
+function changeGameCards(card, gameCards, isAcquire, isStartingDeckCard = false) {
+    //cerca se presente
+    var cardIndex = gameCards.findIndex(c => c.key === card.key);
+    if (isAcquire) {
+        if (cardIndex > -1) {
+            if (gameCards[cardIndex].copy > 1) {
+                gameCards[cardIndex].copy = gameCards[cardIndex].copy - 1;
+            } else {
+                gameCards.splice(cardIndex, 1);
+            }
+        } else {
+            return null;
+        }
+    } else {
+        if (cardIndex > -1) {
+            gameCards[cardIndex].copy = gameCards[cardIndex].copy + 1;
+        } else {
+            if (isStartingDeckCard) {
+                gameCards.push({
+                    key: card.key,
+                    name: card.name,
+                    img: card.img,
+                    copy: 1,
+                    isStartingDeckCard: true
+                });
+            } else {
+                gameCards.push({
+                    key: card.key,
+                    name: card.name,
+                    img: card.img,
+                    copy: 1
+                });
+            }
+        }
     }
-    return result;
+    return gameCards;
+}
+
+function changeIdToKey(cards, isStartingDeck) {
+    var newCards = [];
+    for (let index = 0; index < cards.length; index++) {
+        var newCard = {
+            key: cards[index]._id,
+            name: cards[index].name,
+            img: cards[index].img,
+            copy: cards[index].copy,
+        }
+        if (isStartingDeck)
+            newCard.isStartingDeckCard = true;
+
+        newCards.push(newCard);
+    }
+    return newCards;
 }
 
 function createNewPlayer(username, startingCards, isGuest) {
@@ -1214,7 +1234,7 @@ function createNewPlayer(username, startingCards, isGuest) {
         spice: 0,
         water: 1,
         troops: 3,
-        startingDeck: changeIdToKey(encryptId(startingCards)),
+        startingDeck: changeIdToKey(encryptId(startingCards), true),
         cards: [],
         trashedCards: []
 
@@ -1222,16 +1242,14 @@ function createNewPlayer(username, startingCards, isGuest) {
     return player;
 }
 
-function changeIdToKey(cards) {
-    var newCards = [];
-    for (let index = 0; index < cards.length; index++) {
-        newCards.push({
-            key: cards[index]._id,
-            name: cards[index].name,
-            img: cards[index].img,
-            copy: cards[index].copy
-        }
-        );
+function createRoomCode(length) {
+    var result = '';
+    const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
+    const charactersLength = characters.length;
+    var counter = 0;
+    while (counter < length) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        counter += 1;
     }
-    return newCards;
+    return result;
 }
