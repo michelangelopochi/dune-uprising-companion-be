@@ -16,6 +16,7 @@ const Player = {
     tsmfAcquired: 0,
     conflictPoints: 0,
     otherPoints: 0,
+    conflictsWon: 0,
     fremenFriendship: false,
     beneGesseritFriendship: false,
     spacingGuildFriendship: false,

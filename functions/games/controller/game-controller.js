@@ -326,7 +326,7 @@ export async function endGame(req, res, next) {
     const { _id, username } = req.user;
     const { gameId, tableKey } = body;
 
-    //TODO salvare statistiche prima di eliminarla
+    //TODO salvare statistiche
     try {
         if (!_id) {
             res.status(400).json({ message: 'Invalid user' });
@@ -335,8 +335,6 @@ export async function endGame(req, res, next) {
         if (!gameId || !tableKey) {
             res.status(400).json({ message: 'Invalid params' });
         }
-
-        await Game.findOneAndDelete({ key: gameId });
 
         logger.info("L'host: " + _id + " - " + username + " ha chiuso manualmente la partita: " + gameId);
 
@@ -872,7 +870,7 @@ export async function stopGame(req, res, next) {
     var body = req.body;
 
     const { _id, username } = req.user;
-    const { gameId } = body;
+    const { gameId, round } = body;
 
     try {
         if (!_id) {
@@ -880,7 +878,11 @@ export async function stopGame(req, res, next) {
         }
 
         if (!gameId) {
-            res.status(400).json({ message: 'Invalid params' });
+            return res.status(400).json({ message: 'Invalid params' });
+        }
+
+        if (!round || (round < 1 || round > 10)) {
+            return res.status(400).json({ message: 'Invalid round number' });
         }
 
         const game = await Game.findOne({ key: gameId });
@@ -904,7 +906,7 @@ export async function stopGame(req, res, next) {
                 game.players[activePlayerIndex].tempTime = timerFormatter(durationDate);
             }
 
-            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { stoppedAt: stoppedAt, duration: timerFormatter(duration), players: players }, { "fields": { "_id": 0 }, new: true });
+            const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { stoppedAt: stoppedAt, duration: timerFormatter(duration), players: players, roundPlayed: round }, { "fields": { "_id": 0 }, new: true });
 
             logger.info("La partita " + game.key + " è stata fermata da " + _id + " - " + username);
 
@@ -1222,6 +1224,7 @@ function createNewPlayer(username, startingCards, isGuest) {
         tsmfAcquired: 0,
         conflictPoints: 0,
         otherPoints: 0,
+        conflictsWon: 0,
         fremenFriendship: false,
         beneGesseritFriendship: false,
         spacingGuildFriendship: false,
