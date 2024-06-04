@@ -1,14 +1,10 @@
 import { Router } from "express";
 import { authenticate } from "../middlewares/auth-middleware.js";
-import { create, getGameCards, addGuest, joinGame, addCards, removeCard, endGame, tryReconnect, editGuestName, leave, removeUser, startGame, startTurn, stopTurn, updatePlayer, getGameLeaders, selectOrder, trashCard, selectLeader, stopGame } from "./controller/game-controller.js";
+import { create, addGuest, joinGame, addCards, removeCard, endGame, tryReconnect, editGuestName, leave, removeUser, startGame, startTurn, stopTurn, updatePlayer, selectOrder, trashCard, selectLeader, stopGame } from "./controller/game-controller.js";
 
 const gameRouter = Router();
 
 gameRouter.post('/create', authenticate, create);
-
-gameRouter.get('/getGameCards', authenticate, getGameCards);
-
-gameRouter.get('/getGameLeaders', authenticate, getGameLeaders);
 
 gameRouter.post('/addGuest', authenticate, addGuest);
 
