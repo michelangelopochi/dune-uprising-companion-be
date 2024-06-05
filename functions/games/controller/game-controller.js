@@ -1225,6 +1225,9 @@ function createNewPlayer(username, startingCards, isGuest) {
         conflictPoints: 0,
         otherPoints: 0,
         conflictsWon: 0,
+        conflictsLV1Won: 0,
+        conflictsLV2Won: 0,
+        conflictsLV3Won: 0,
         fremenFriendship: false,
         beneGesseritFriendship: false,
         spacingGuildFriendship: false,
@@ -1247,7 +1250,8 @@ function createNewPlayer(username, startingCards, isGuest) {
 
 function createRoomCode(length) {
     var result = '';
-    const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
+    // const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
+    const characters = '0123456789';
     const charactersLength = characters.length;
     var counter = 0;
     while (counter < length) {
