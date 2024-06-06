@@ -3,6 +3,7 @@ const QueryCaseKeys = {
     BOOLEAN: "BOOLEAN",
     LIKE: "LIKE",
     EXACT: "EXACT",
+    OTHER: "OTHER",
     ANY: "ANY",
     NONE: "NONE"
 }
@@ -24,25 +25,21 @@ const QueryKeys = {
  * 
  */
 
+/* RELEASE 0.4.1 - Rimossi effetti dalla ricerca intrighi. Filtrabili solo per tipo e modulo */
 export function createIntrigueQueryParams(incomingParams) {
     var andParams = [];
     var typeArray = [];
 
-    if (incomingParams.name) {
-        andParams.push({ name: parseParam(incomingParams.name, QueryCaseKeys.LIKE) });
-    }
-
-    /* COPIES */
-    if (incomingParams.copyNumberFrom || incomingParams.copyNumberTo) {
-        andParams.push({ copy: { [QueryKeys.GREATER_THEN]: parseParam(incomingParams.copyNumberFrom, QueryCaseKeys.NUMBER), [QueryKeys.LESS_THEN]: parseParam(incomingParams.copyNumberTo, QueryCaseKeys.NUMBER) } })
-    }
+    // if (incomingParams.name) {
+    //     andParams.push({ name: parseParam(incomingParams.name, QueryCaseKeys.LIKE) });
+    // }
 
     /**
      * GIVES VICTORY POINT? true|false
      */
-    if (incomingParams.givesVP) {
-        andParams.push({ givesVP: parseParam(incomingParams.givesVP, QueryCaseKeys.BOOLEAN) });
-    }
+    // if (incomingParams.givesVP) {
+    //     andParams.push({ givesVP: parseParam(incomingParams.givesVP, QueryCaseKeys.BOOLEAN) });
+    // }
 
     /* PHASES */
     if (incomingParams.intriguePlotCards || incomingParams.intrigueConflictCards || incomingParams.intrigueEndgameCards) {
@@ -60,33 +57,33 @@ export function createIntrigueQueryParams(incomingParams) {
     }
 
     /* EFFECTS */
-    if (incomingParams.effectRequirements || incomingParams.effectCosts || incomingParams.effectBonuses) {
-        var object = "effects";
-        var tempEffectsAnd = [];
+    // if (incomingParams.effectRequirements || incomingParams.effectCosts || incomingParams.effectBonuses) {
+    //     var object = "effects";
+    //     var tempEffectsAnd = [];
 
-        if (incomingParams.effectRequirements) {
-            parseNestedObject(incomingParams.effectRequirements, incomingParams.effectRequirementsAggregator, tempEffectsAnd, object, "requirements");
-        }
+    //     if (incomingParams.effectRequirements) {
+    //         parseNestedObject(incomingParams.effectRequirements, incomingParams.effectRequirementsAggregator, tempEffectsAnd, object, "requirements");
+    //     }
 
-        if (incomingParams.effectCosts) {
-            parseNestedObject(incomingParams.effectCosts, incomingParams.effectCostsAggregator, tempEffectsAnd, object, "costs");
-        }
+    //     if (incomingParams.effectCosts) {
+    //         parseNestedObject(incomingParams.effectCosts, incomingParams.effectCostsAggregator, tempEffectsAnd, object, "costs");
+    //     }
 
 
-        if (incomingParams.effectBonuses) {
-            parseNestedObject(incomingParams.effectBonuses, incomingParams.effectBonusesAggregator, tempEffectsAnd, object, "bonuses");
-        }
+    //     if (incomingParams.effectBonuses) {
+    //         parseNestedObject(incomingParams.effectBonuses, incomingParams.effectBonusesAggregator, tempEffectsAnd, object, "bonuses");
+    //     }
 
-        var tempEffectsParams = {};
-        if (tempEffectsAnd.length > 0) {
-            tempEffectsParams = {
-                $and: tempEffectsAnd
-            };
+    //     var tempEffectsParams = {};
+    //     if (tempEffectsAnd.length > 0) {
+    //         tempEffectsParams = {
+    //             $and: tempEffectsAnd
+    //         };
 
-            andParams.push({ [object]: { $elemMatch: tempEffectsParams } });
-        }
+    //         andParams.push({ [object]: { $elemMatch: tempEffectsParams } });
+    //     }
 
-    }
+    // }
 
     /* TYPE */
     var tempOR = [{ type: "INTRIGUE" }];
@@ -165,15 +162,6 @@ export function createImperiumQueryParams(incomingParams) {
         andParams.push({ price: { [QueryKeys.GREATER_THEN]: parseParam(incomingParams.priceFrom, QueryCaseKeys.NUMBER), [QueryKeys.LESS_THEN]: parseParam(incomingParams.priceTo, QueryCaseKeys.NUMBER) } })
     }
 
-    /* ACQUIRED BONUS*/
-    if (incomingParams.acquiredBonuses) {
-        if (incomingParams.acquiredBonuses === QueryCaseKeys.ANY) {
-            andParams.push({ 'acquiredBonuses.0': { [QueryKeys.EXISTS]: true } });
-        } else {
-            andParams.push({ acquiredBonuses: parseParam(incomingParams.acquiredBonuses, QueryCaseKeys.EXACT) });
-        }
-    }
-
     /* SYMBOLS */
     if (incomingParams.symbols) {
         //AT LEAST ONE OR NONE
@@ -214,27 +202,27 @@ export function createImperiumQueryParams(incomingParams) {
         }
     }
 
-    /* DISCARED BONUS */
-    if (incomingParams.discardedBonuses) {
-        if (incomingParams.discardedBonuses === QueryCaseKeys.ANY) {
-            andParams.push({ 'discardedBonuses.0': { [QueryKeys.EXISTS]: true } });
-        } else {
-            andParams.push({ discardedBonuses: parseParam(incomingParams.discardedBonuses, QueryCaseKeys.EXACT) });
-        }
-    }
+    /* OTHER BONUSES */
+    if (incomingParams.acquiredBonuses || incomingParams.discardedBonuses || incomingParams.trashedBonuses) {
+        var tempOr = [];
 
-    /* TRASHED BONUS */
-    if (incomingParams.trashedBonuses) {
-        if (incomingParams.trashedBonuses === QueryCaseKeys.ANY) {
-            andParams.push({ 'trashedBonuses.0': { [QueryKeys.EXISTS]: true } });
-        } else {
-            andParams.push({ trashedBonuses: parseParam(incomingParams.trashedBonuses, QueryCaseKeys.EXACT) });
-        }
-    }
+        /* ACQUIRED BONUS*/
+        if (incomingParams.acquiredBonuses)
+            tempOr.push({ 'acquiredBonuses.0': { [QueryKeys.EXISTS]: true } });
 
-    /* COPIES */
-    if (incomingParams.copyNumberFrom || incomingParams.copyNumberTo) {
-        andParams.push({ copy: { [QueryKeys.GREATER_THEN]: parseParam(incomingParams.copyNumberFrom, QueryCaseKeys.NUMBER), [QueryKeys.LESS_THEN]: parseParam(incomingParams.copyNumberTo, QueryCaseKeys.NUMBER) } })
+        /* DISCARDED BONUS */
+        if (incomingParams.discardedBonuses) {
+            tempOr.push({ 'discardedBonuses.0': { [QueryKeys.EXISTS]: true } });
+        }
+
+        /* TRASHED BONUS */
+        if (incomingParams.trashedBonuses) {
+            tempOr.push({ 'trashedBonuses.0': { [QueryKeys.EXISTS]: true } });
+        }
+
+        if (tempOr.length > 0) {
+            andParams.push({ $or: tempOr });
+        }
     }
 
     /**
