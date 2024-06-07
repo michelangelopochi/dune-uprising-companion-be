@@ -302,7 +302,7 @@ export function createImperiumQueryParams(incomingParams) {
 
     /* TYPE */
     var tempOR = [{ type: "IMPERIUM_ROW" }];
-    if (incomingParams.includesCHOAMModule || incomingParams.includesPrepareTheWay || incomingParams.includesTSMF) {
+    if (incomingParams.includesCHOAMModule || incomingParams.includesPrepareTheWay || incomingParams.includesTSMF || incomingParams.includesRiseOfIX || incomingParams.includesImmortality) {
         if (incomingParams.includesCHOAMModule) {
             tempOR.push({ type: "CHOAM_MODULE" });
         }
@@ -311,6 +311,12 @@ export function createImperiumQueryParams(incomingParams) {
         }
         if (incomingParams.includesTSMF) {
             tempOR.push({ type: "TSMF" });
+        }
+        if (incomingParams.includesRiseOfIX) {
+            tempOR.push({ type: "RISE_OF_IX" });
+        }
+        if (incomingParams.includesImmortality) {
+            tempOR.push({ type: "IMMORTALITY" });
         }
     }
     typeArray.push({ $or: tempOR });
