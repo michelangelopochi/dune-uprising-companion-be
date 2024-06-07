@@ -194,7 +194,7 @@ export async function create(req, res, next) {
     var body = req.body;
 
     const { _id, username } = req.user;
-    const { tableKey, cardModules, leaderModules, leaderToExclude } = body;
+    const { tableKey, cardModules, moduleLeaders, leadersToExclude } = body;
 
     try {
         if (!_id) {
@@ -215,7 +215,15 @@ export async function create(req, res, next) {
 
         var newPlayer = createNewPlayer(username, startingCards, false);
 
+        var cardModulesToLoad = ["IMPERIUM_ROW", "PREPARE_THE_WAY", "TSMF"];
+        cardModulesToLoad = cardModulesToLoad.concat(cardModules);
+
         const gameCards = await ImperiumRowCard.aggregate([
+            {
+                $match: {
+                    type: { $in: cardModulesToLoad } // Filtra i documenti che hanno type incluso nell'array cardModulesToLoad
+                }
+            },
             {
                 $addFields: {
                     sortOrder: {
@@ -223,7 +231,7 @@ export async function create(req, res, next) {
                             branches: [
                                 { case: { $eq: ["$type", "PREPARE_THE_WAY"] }, then: 1 },
                                 { case: { $eq: ["$type", "TSMF"] }, then: 2 },
-                                { case: { $eq: ["$type", cardModules] }, then: 3 }
+                                { case: { $in: ["$type", cardModulesToLoad] }, then: 3 }
                             ],
                             // default: 3 // In caso di tipi non corrispondenti, li posizioniamo alla fine
                         }
@@ -233,7 +241,12 @@ export async function create(req, res, next) {
             { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
         ]).project("_id img name copy");
 
-        var leaders = leaderRandomize(leaderToExclude, leaderModules.includes("RISE_OF_IX"));
+        var leaders = leaderRandomize(leadersToExclude, moduleLeaders);
+
+        if (!cardModulesToLoad.includes("RISE_OF_IX") && moduleLeaders.length > 0)
+            cardModulesToLoad.push("RISE_OF_IX");
+
+        cardModulesToLoad.splice(0, 3); //rimuove i type "IMPERIUM_ROW", "PREPARE_THE_WAY", "TSMF"
 
         var game = await Game.create({
             host: username,
@@ -244,7 +257,8 @@ export async function create(req, res, next) {
             spectators: [],
             leaders: leaders.gameLeaders,
             excludedLeaders: leaders.excludedLeaders,
-            cards: changeIdToKey(encryptId(gameCards), false)
+            cards: changeIdToKey(encryptId(gameCards), false),
+            modules: cardModulesToLoad
         })
 
         logger.info("Partita creata: " + game.key)

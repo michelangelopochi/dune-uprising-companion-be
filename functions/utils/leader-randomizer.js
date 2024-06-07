@@ -1,4 +1,4 @@
-export function leaderRandomize(leaderToExclude, includesRiseOfIx) {
+export function leaderRandomize(leadersToExclude, moduleLeaders) {
     var leaders = [
         "feyd-rautha-harkonnen",
         "gurney-halleck",
@@ -11,23 +11,18 @@ export function leaderRandomize(leaderToExclude, includesRiseOfIx) {
         "staban-tuek",
     ];
 
-    var riseOfIXLeaders = [
-        "archduke-armand-ecaz",
-        "ilesa-ecaz",
-        "prince-rhombur-vernus",
-        "princess-yuna-moritani",
-        "tessia-vernus",
-        "viscount-hundro-moritani"
-    ];
-
-    if (includesRiseOfIx) {
-        leaders = leaders.concat(riseOfIXLeaders);
+    if (moduleLeaders.length > 0) {
+        leaders = leaders.concat(moduleLeaders);
     }
 
     var indexToExclude = [];
 
-    for (let index = 0; index < leaderToExclude; index++) {
-        indexToExclude.push(Math.floor(Math.random() * leaders.length));
+    for (let index = 0; index < leadersToExclude; index++) {
+        var indexTemp = Math.floor(Math.random() * leaders.length);
+        while (indexToExclude.includes(indexTemp)) {
+            indexTemp = Math.floor(Math.random() * leaders.length);
+        }
+        indexToExclude.push(indexTemp);
     }
 
     var gameLeaders = leaders.filter((leader, index) => !indexToExclude.includes(index));
