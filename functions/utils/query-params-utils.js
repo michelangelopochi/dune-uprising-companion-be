@@ -87,9 +87,15 @@ export function createIntrigueQueryParams(incomingParams) {
 
     /* TYPE */
     var tempOR = [{ type: "INTRIGUE" }];
-    if (incomingParams.includesCHOAMModule) {
+    if (incomingParams.includesCHOAMModule || incomingParams.includesRiseOfIX || incomingParams.includesImmortality) {
         if (incomingParams.includesCHOAMModule) {
             tempOR.push({ type: "CHOAM_MODULE" });
+        }
+        if (incomingParams.includesRiseOfIX) {
+            tempOR.push({ type: "RISE_OF_IX" });
+        }
+        if (incomingParams.includesImmortality) {
+            tempOR.push({ type: "IMMORTALITY" });
         }
     }
     typeArray.push({ $or: tempOR });
