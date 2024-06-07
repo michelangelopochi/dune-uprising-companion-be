@@ -194,7 +194,7 @@ export async function create(req, res, next) {
     var body = req.body;
 
     const { _id, username } = req.user;
-    const { tableKey } = body;
+    const { tableKey, cardModules, leaderModules, leaderToExclude } = body;
 
     try {
         if (!_id) {
@@ -223,9 +223,9 @@ export async function create(req, res, next) {
                             branches: [
                                 { case: { $eq: ["$type", "PREPARE_THE_WAY"] }, then: 1 },
                                 { case: { $eq: ["$type", "TSMF"] }, then: 2 },
-                                // { case: { $eq: ["$type", "IMPERIUM_ROW"] }, then: 3 }
+                                { case: { $eq: ["$type", cardModules] }, then: 3 }
                             ],
-                            default: 3 // In caso di tipi non corrispondenti, li posizioniamo alla fine
+                            // default: 3 // In caso di tipi non corrispondenti, li posizioniamo alla fine
                         }
                     }
                 }
@@ -233,7 +233,7 @@ export async function create(req, res, next) {
             { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
         ]).project("_id img name copy");
 
-        var leaders = leaderRandomize(2);
+        var leaders = leaderRandomize(leaderToExclude, leaderModules.includes("RISE_OF_IX"));
 
         var game = await Game.create({
             host: username,

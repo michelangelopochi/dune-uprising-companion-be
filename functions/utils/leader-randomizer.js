@@ -1,5 +1,5 @@
-export function leaderRandomize(leaderToExclude) {
-    const leaders = [
+export function leaderRandomize(leaderToExclude, includesRiseOfIx) {
+    var leaders = [
         "feyd-rautha-harkonnen",
         "gurney-halleck",
         "lady-amber-metulli",
@@ -10,6 +10,19 @@ export function leaderRandomize(leaderToExclude) {
         "shaddam-corrino-iv",
         "staban-tuek",
     ];
+
+    var riseOfIXLeaders = [
+        "archduke-armand-ecaz",
+        "ilesa-ecaz",
+        "prince-rhombur-vernus",
+        "princess-yuna-moritani",
+        "tessia-vernus",
+        "viscount-hundro-moritani"
+    ];
+
+    if (includesRiseOfIx) {
+        leaders = leaders.concat(riseOfIXLeaders);
+    }
 
     var indexToExclude = [];
 

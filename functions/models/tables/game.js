@@ -21,6 +21,7 @@ const GameSchema = new mongoose.Schema(
         stoppedAt: { type: Date, default: "" },
         duration: { type: String, default: "" },
         roundPlayed: { type: Number, default: 0 },
+        modules: [{ type: String }]
     },
     {
         timestamps: true,
