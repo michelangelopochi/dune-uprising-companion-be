@@ -17,6 +17,8 @@ const userSchema = new mongoose.Schema(
         role: { type: String, enum: ['user', 'admin', 'test'], default: 'user' },
         confirmed: { type: Boolean, default: false },
         confirmationToken: { type: String, default: "" },
+        resetPasswordToken: { type: String, default: "" },
+        resetPasswordExpires: { type: String, default: "" },
     },
     {
         timestamps: true,

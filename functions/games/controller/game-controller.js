@@ -194,7 +194,7 @@ export async function create(req, res, next) {
     var body = req.body;
 
     const { _id, username } = req.user;
-    const { tableKey, cardModules, moduleLeaders, leadersToExclude } = body;
+    const { tableKey, cardModules, leaderModules, leadersToExclude } = body;
 
     try {
         if (!_id) {
@@ -241,9 +241,9 @@ export async function create(req, res, next) {
             { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
         ]).project("_id img name copy");
 
-        var leaders = leaderRandomize(leadersToExclude, moduleLeaders);
+        var leaders = leaderRandomize(leadersToExclude, leaderModules);
 
-        if (!cardModulesToLoad.includes("RISE_OF_IX") && moduleLeaders.length > 0)
+        if (!cardModulesToLoad.includes("RISE_OF_IX") && leaderModules)
             cardModulesToLoad.push("RISE_OF_IX");
 
         cardModulesToLoad.splice(0, 3); //rimuove i type "IMPERIUM_ROW", "PREPARE_THE_WAY", "TSMF"
