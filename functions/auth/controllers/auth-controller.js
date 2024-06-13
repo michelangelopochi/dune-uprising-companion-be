@@ -59,7 +59,7 @@ export async function forgotPassword(req, res, next) {
             return res.status(400).json({ message: 'User with this email does not exist' });
         }
 
-        const token = await bcrypt.hash(user.password, 10);
+        const token = encodeURI(await bcrypt.hash(user.password, 10));
         user.resetPasswordToken = token;
         user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
 
@@ -126,7 +126,7 @@ export async function resetPassword(req, res, next) {
         });
 
         if (!user) {
-            return res.status(400).json({ meaage: 'Password reset token is invalid or has expired' });
+            return res.status(400).json({ message: 'Password reset token is invalid or has expired' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -143,25 +143,26 @@ export async function resetPassword(req, res, next) {
 };
 
 export async function changePassword(req, res, next) {
-    const { username, oldPassword, oldPasswordConfirm, newPassword } = req.body;
+    const { username } = req.user;
+    const { newPassword, newPasswordConfirm } = req.body;
 
     try {
-        if (!username || !oldPassword || !oldPasswordConfirm || !newPassword) {
+        if (!newPassword || !newPasswordConfirm) {
             return res.status(400).json({ message: 'Invalid params' });
         }
 
-        if (oldPassword !== oldPasswordConfirm) {
+        if (newPassword !== newPasswordConfirm) {
             return res.status(400).json({ message: 'Passwords do not match' });
         }
 
-        const user = await User.findOne({ username: username });
+        var updatedUser = await User.findOne({ username: username });
 
-        if (!user) {
-            return res.status(400).json({ message: 'Username not found' });
+        if (!updatedUser) {
+            return res.status(400).json({ message: 'User not found' });
         }
 
-        user.password = await bcrypt.hash(newPassword, 10);
-        await user.save();
+        updatedUser.password = await bcrypt.hash(newPassword, 10);
+        await updatedUser.save();
 
         res.status(200).json({ message: 'Password changed successfully' });
     } catch (error) {
