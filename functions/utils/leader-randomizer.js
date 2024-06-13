@@ -1,4 +1,4 @@
-export function leaderRandomize(leadersToExclude, moduleLeaders) {
+export function leaderRandomize(leadersToExclude, leaderModules) {
     var leaders = [
         "feyd-rautha-harkonnen",
         "gurney-halleck",
@@ -11,8 +11,17 @@ export function leaderRandomize(leadersToExclude, moduleLeaders) {
         "staban-tuek",
     ];
 
-    if (moduleLeaders.length > 0) {
-        leaders = leaders.concat(moduleLeaders);
+    var riseOfIXLeaders = [
+        "archduke-armand-ecaz",
+        "ilesa-ecaz",
+        "prince-rhombur-vernus",
+        "princess-yuna-moritani",
+        "tessia-vernius",
+        "viscount-hundro-moritani"
+    ];
+
+    if (leaderModules) {
+        leaders = leaders.concat(riseOfIXLeaders);
     }
 
     var indexToExclude = [];
