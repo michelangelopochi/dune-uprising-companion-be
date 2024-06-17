@@ -4,14 +4,15 @@ dotenv.config();
 
 export function changeCardParams(cards) {
     var newArray = [];
-    for (const object of array) {
+    for (const object of cards) {
         var newObject = object["_doc"] ? object["_doc"] : object;
         if (newObject["img"]) {
             //temp
-            if (!newObject["img"].contains("dune-uprising-companion-api.s3.eu-west-3.amazonaws.com"))
-                newObject["img"] = process.env.AWS_BUCKET_CARD_PATH + "/" + object["img"];
+            if (!newObject["img"].includes("dune-uprising-companion-api.s3.eu-west-3.amazonaws.com")) {
+                newObject["img"] = process.env.AWS_BUCKET_CARD_PATH + "/" + newObject["img"];
+            }
             else {
-                newObject["img"] = object["img"].replace("-api.s3", "-app.s3");
+                newObject["img"] = newObject["img"].replace("-api.s3", "-app.s3");
             }
         }
         newArray.push(newObject);
