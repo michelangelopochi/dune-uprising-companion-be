@@ -11,6 +11,7 @@ import StartingDeckCard from '../../models/cards/starting-deck-card.js';
 
 import { logger } from '../../utils/logger.js';
 import { leaderRandomize } from '../../utils/leader-randomizer.js';
+import { changeCardParams } from '../../utils/cards-utils.js';
 
 dotenv.config();
 
@@ -213,12 +214,12 @@ export async function create(req, res, next) {
             startingCards[startingCardIndex].isStartingDeckCard = true;
         }
 
-        var newPlayer = createNewPlayer(username, startingCards, false);
+        var newPlayer = createNewPlayer(username, changeCardParams(startingCards), false);
 
         var cardModulesToLoad = ["IMPERIUM_ROW", "PREPARE_THE_WAY", "TSMF"];
         cardModulesToLoad = cardModulesToLoad.concat(cardModules);
 
-        const gameCards = await ImperiumRowCard.aggregate([
+        var gameCards = await ImperiumRowCard.aggregate([
             {
                 $match: {
                     type: { $in: cardModulesToLoad } // Filtra i documenti che hanno type incluso nell'array cardModulesToLoad
@@ -240,6 +241,8 @@ export async function create(req, res, next) {
             },
             { $sort: { sortOrder: 1, name: 1 } } // Ordinamento per il campo sortOrder seguito dall'ordinamento alfabetico
         ]).project("_id img name copy");
+
+        gameCards = changeCardParams(gameCards);
 
         //per convivenza con versione 0.4.2
         var booleanLeaderIx = leaderModules === true || (Array.isArray(leaderModules) && leaderModules.length > 0)
@@ -420,7 +423,7 @@ export async function joinGame(req, res, next) {
                                         startingCards[startingCardIndex].isStartingDeckCard = true;
                                     }
 
-                                    players.push(createNewPlayer(username, startingCards, false));
+                                    players.push(createNewPlayer(username, changeCardParams(startingCards), false));
                                     const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
 
                                     logger.info("Il giocatore " + _id + " - " + username + " si è iscritto alla partita " + game.key + " come " + role);
