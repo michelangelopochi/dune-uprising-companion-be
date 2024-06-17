@@ -164,7 +164,7 @@ export async function addGuest(req, res, next) {
                                 startingCards[startingCardIndex].isStartingDeckCard = true;
                             }
 
-                            players.push(createNewPlayer(guestName, startingCards, true));
+                            players.push(createNewPlayer(guestName, changeCardParams(startingCards), true));
 
                             const updatedGame = await Game.findOneAndUpdate({ key: game.key }, { players: players }, { "fields": { "_id": 0 }, new: true });
 
