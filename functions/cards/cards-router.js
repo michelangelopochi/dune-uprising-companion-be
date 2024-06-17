@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { createImperiumQueryParams, createIntrigueQueryParams, createMultipleImperiumQueryParams, createMultipleIntrigueQueryParams } from "../utils/query-params-utils.js";
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
 import { encryptId } from "../utils/id-encrypter.js";
+import { changeCardParams } from "../utils/cards-utils.js";
 
 dotenv.config();
 const cardsRouter = Router();
@@ -56,8 +57,8 @@ cardsRouter.post("/searchCards", async function (req, res) {
             }
 
             var results = {
-                imperiumRowResults: encryptId(imperiumRowResults),
-                intrigueCardsResults: encryptId(intrigueCardsResults),
+                imperiumRowResults: encryptId(changeCardParams(imperiumRowResults)),
+                intrigueCardsResults: encryptId(changeCardParams(intrigueCardsResults)),
             };
 
             res.status(200).json(results);
