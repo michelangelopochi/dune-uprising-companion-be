@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import { logger } from '../../utils/logger.js';
 import User from "../../models/user.js";
+import { nanoid } from 'nanoid';
 
 dotenv.config();
 
@@ -59,7 +60,7 @@ export async function forgotPassword(req, res, next) {
             return res.status(400).json({ message: 'User with this email does not exist' });
         }
 
-        const token = encodeURI(await bcrypt.hash(user.password, 10));
+        const token = nanoid();
         user.resetPasswordToken = token;
         user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
 
